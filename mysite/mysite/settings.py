@@ -1,24 +1,32 @@
 from dotenv import load_dotenv
 import os
-
+import environ
 # Load environment variables from the .env file
 load_dotenv()
 
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Initialise environment variables
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
+# Define BASE_DIR as the parent directory of the current file (two levels up)
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Take environment variables from .env file
+environ.Env.read_env(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOST', default=['127.0.0.1', 'localhost'])
 
 # Application definition
 
@@ -64,24 +72,12 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT'),
-        }
-    }
+DATABASES = {
+    'default': env.db(
+        'DATABASE_URL',
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+    )
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
