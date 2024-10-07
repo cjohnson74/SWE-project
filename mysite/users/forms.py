@@ -2,24 +2,11 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
+from .models import Profile
+
+
 class RegisterForm(UserCreationForm):
-    """
-    A custom form class for user registration.
-
-    Subclass of UserCreationForm.
-
-    Attributes:
-        first_name (CharField): A field for entering the user's first name.
-        last_name (CharField): A field for entering the user's last name.
-        email (EmailField): A field for entering the user's email address.
-        password1 (CharField): A field for entering the user's password.
-        password2 (CharField): A field for confirming the user's password.
-
-    Meta:
-        model (User): The User model.
-        fields (list): The fields to be displayed in the form.
-
-    """
+    # fields we want to include and customize in our form
     first_name = forms.CharField(max_length=100,
                                  required=True,
                                  widget=forms.TextInput(attrs={'placeholder': 'First Name',
@@ -30,6 +17,11 @@ class RegisterForm(UserCreationForm):
                                 widget=forms.TextInput(attrs={'placeholder': 'Last Name',
                                                               'class': 'form-control',
                                                               }))
+    username = forms.CharField(max_length=100,
+                               required=True,
+                               widget=forms.TextInput(attrs={'placeholder': 'Username',
+                                                             'class': 'form-control',
+                                                             }))
     email = forms.EmailField(required=True,
                              widget=forms.TextInput(attrs={'placeholder': 'Email',
                                                            'class': 'form-control',
@@ -48,26 +40,13 @@ class RegisterForm(UserCreationForm):
                                                                   'data-toggle': 'password',
                                                                   'id': 'password',
                                                                   }))
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'password1', 'password2']
 
+
 class LoginForm(AuthenticationForm):
-    """
-    LoginForm class for user authentication.
-
-    Extends:
-        AuthenticationForm
-
-    Attributes:
-        username: CharField - Input for username with max length of 100 characters, required.
-        password: CharField - Input for password with max length of 50 characters, required. Password field will be obscured.
-        remember_me: BooleanField - Checkbox for "Remember Me" option, not required.
-
-    Meta:
-        model: User - Represents the User model.
-        fields: List - Contains the fields ['username', 'password', 'remember_me'] for the form.
-    """
     username = forms.CharField(max_length=100,
                                required=True,
                                widget=forms.TextInput(attrs={'placeholder': 'Username',
@@ -86,3 +65,24 @@ class LoginForm(AuthenticationForm):
     class Meta:
         model = User
         fields = ['username', 'password', 'remember_me']
+
+
+class UpdateUserForm(forms.ModelForm):
+    username = forms.CharField(max_length=100,
+                               required=True,
+                               widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(required=True,
+                             widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+
+
+class UpdateProfileForm(forms.ModelForm):
+    avatar = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-control-file'}))
+    bio = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5}))
+
+    class Meta:
+        model = Profile
+        fields = ['avatar', 'bio']
