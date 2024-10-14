@@ -1,8 +1,10 @@
 from django.urls import path
 
-from .views import HomePageView, AboutPageView
+from .views import HomePageView, CourseListView, AssignmentsListView, AssignmentDetailsView
 
 urlpatterns = [
-    path("", HomePageView.as_view(), name="home"),
-    path("about/", AboutPageView.as_view(), name="about"),
+    path("", HomePageView, name="home"),
+    path("courses/", CourseListView, name="courses"),
+    path("courses/<str:course_id>/assignments/", AssignmentsListView, name="course_assignments"),
+    path("assignments/<str:assignment_id>/", AssignmentDetailsView, name="assignment_details")
 ]

@@ -1,0 +1,65 @@
+{% extends '_base.html' %}
+
+{% block title %}Assignment Detail{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        p {
+            margin: 10px 0; /* Add spacing between paragraphs */
+        }
+        .description {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9; /* Light background for description */
+            margin-bottom: 20px; /* Space below the description */
+        }
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            text-decoration: none;
+            color: #007BFF; /* Bootstrap primary color */
+        }
+        .back-link:hover {
+            text-decoration: underline; /* Underline on hover */
+        }
+    </style>
+</head>
+<body>
+    <h1>Assignment Detail</h1>
+    <h2>{{ assignment.name }}</h2>
+    <p><strong>Assignment ID:</strong> {{ assignment.canvas_id }}</p>
+    <p><strong>Description:</strong></p>
+    <div class="description">{{ assignment.description|safe }}</div>  <!-- Render HTML safely -->
+    <p><strong>Due Date:</strong> {{ assignment.due_at }}</p>
+    <p><strong>Points Possible:</strong> {{ assignment.points_possible }}</p>
+    <p><strong>Submission Types:</strong> {{ assignment.submission_types }}</p>
+    <p><strong>Allowed Extensions:</strong> {{ assignment.allowed_extensions }}</p>
+    <p><strong>Created At:</strong> {{ assignment.created_at }}</p>
+    <p><strong>Last Updated:</strong> {{ assignment.updated_at }}</p>
+    
+    <a href="{% url 'course_assignments' assignment.course_id %}" class="back-link">Back to Assignments</a>
+</body>
+</html>
+{% endblock content %}
