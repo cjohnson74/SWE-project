@@ -1,0 +1,17 @@
+<!-- upload_document.html -->
+
+{% extends '_base.html' %}
+
+{% block title %}Upload Document{% endblock %}
+
+{% block content %}
+<h1>Upload Document</h1>
+
+<form action="{% url 'upload_document' %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload Document</button>
+</form>
+
+<a href="{% url 'courses' %}">Back to Courses</a>
+{% endblock content %}

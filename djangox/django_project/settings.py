@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django import forms
 
 env_path = Path('.') / '.env'
 
@@ -20,6 +21,10 @@ load_dotenv(dotenv_path=env_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Media files (uploaded files) directory
+MEDIA_ROOT = BASE_DIR / 'media'  # This will create a 'media' folder in your project root
+MEDIA_URL = '/media/'  # URL to access media files
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/

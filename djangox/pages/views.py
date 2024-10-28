@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django import forms
-from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
+from django.conf import settings
+from .forms import DocumentForm
+from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines, Document
 from django.shortcuts import redirect, render, get_object_or_404
 
 def HomePageView(request):
@@ -247,6 +249,27 @@ def add_deadline(request):
         form = forms.DeadlineForm()
 
     return render(request, 'pages/deadline_form.html', {'form': form})
+
+# Uploading files to database
+def upload_document(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = form.cleaned_data['file']
+            file_path = f"{settings.MEDIA_ROOT}/{file.name}"
+            with open(file_path, 'wb+') as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
+
+            # Save document to MongoDB
+            doc = Document(title=form.cleaned_data['title'], file_path=file_path)
+            doc.save()
+            return redirect('courses')  # Redirect after upload
+    else:
+        form = DocumentForm()
+    return render(request, 'pages/upload_document.html', {'form': form})
+
+
 
 # def course_detail(request, course_id):
 #     """View to display details of a specific course."""

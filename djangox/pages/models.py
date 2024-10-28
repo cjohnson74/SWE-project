@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 from django.conf import settings
+from datetime import datetime
 
 class MongoDBClient:
     def __init__(self):
@@ -7,7 +8,27 @@ class MongoDBClient:
         self.db = self.client[settings.MONGODB_SETTINGS['database']]
 
 # Create your models here.
+class Document:
+    collection_name = "Documents"
 
+    def __init__(self, title=None, file_path=None):
+        self.title = title
+        self.file_path = file_path
+        self.uploaded_at = datetime.now()
+
+    def save(self):
+        document = {
+            "title": self.title,
+            "file_path": self.file_path,
+            "uploaded_at": self.uploaded_at,
+        }
+        client = MongoDBClient()
+        client.db[self.collection_name].insert_one(self.__dict__)
+
+    @staticmethod
+    def get_all():
+        return list(settings.MONGO_DB.documents.find())
+                    
 class Students():
     collection_name = 'Students'
 
