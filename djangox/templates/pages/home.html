@@ -1,11 +1,131 @@
 {% extends '_base.html' %}
 {% load static %}
 
-{% block title %}Home page{% endblock title %}
+{% block title %}Your Dashboard{% endblock title %}
 
 {% block content %}
-<div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-  <img src="{% static 'images/logo.png' %}" class="img-fluid" alt="DjangoX logo"/>
-  <p class="lead">A Django starter project with batteries.</p>
+{% if user.is_authenticated %}
+<div class="dashboard-container mx-auto px-4 py-5">
+    <!-- Dashboard Header -->
+    <div class="pricing-header text-center mb-5">
+        <h1>Your AI Smart Agenda</h1>
+        <p>Stay organized with your personalized agenda.</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Daily Tasks -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5>Today's Tasks</h5>
+                </div>
+                <div class="card-body">
+                    {% comment %} Loop through daily tasks provided by backend {% endcomment %}
+                    {% for task in daily_tasks %}
+                        <div class="task-item">
+                            <h6>{{ task.title }}</h6>
+                            <p>{{ task.description }}</p>
+                            <span class="badge bg-secondary">{{ task.due_time }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5>Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                    {% comment %} Loop through upcoming events provided by backend {% endcomment %}
+                    {% for event in upcoming_events %}
+                        <div class="event-item">
+                            <h6>{{ event.title }}</h6>
+                            <p>{{ event.date }} - {{ event.time }}</p>
+                            <span class="badge bg-info">{{ event.location }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Reminders -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5>Reminders</h5>
+                </div>
+                <div class="card-body">
+                    {% comment %} Loop through reminders provided by backend {% endcomment %}
+                    {% for reminder in reminders %}
+                        <div class="reminder-item">
+                            <h6>{{ reminder.title }}</h6>
+                            <p>{{ reminder.description }}</p>
+                            <span class="badge bg-danger">{{ reminder.alert_time }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5>AI Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% comment %} Loop through AI recommendations provided by backend {% endcomment %}
+                    {% for recommendation in ai_recommendations %}
+                        <div class="recommendation-item">
+                            <h6>{{ recommendation.title }}</h6>
+                            <p>{{ recommendation.content }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% else %}
+<div class="landing-page-container mx-auto text-center px-4 py-5">
+    <!-- Title Section -->
+    <div class="landing-header mb-5">
+        <h1 class="display-4">Smart Agenda</h1>
+        <p class="lead">Your intelligent, all-in-one scheduling assistant.</p>
+    </div>
+
+    <!-- Description Section -->
+    <div class="description-section my-4">
+        <p class="fs-5">
+            Smart Agenda is designed to simplify your life by intelligently managing your tasks, reminders, and events in one streamlined platform. Powered by AI, Smart Agenda learns from your habits to provide timely reminders, insightful recommendations, and a structured view of your daily and upcoming plans.
+        </p>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section row mt-5">
+        <div class="col-md-4 mb-4">
+            <div class="feature-item p-4 bg-light border rounded">
+                <h5>Personalized Scheduling</h5>
+                <p>Get personalized schedules and notifications tailored to your needs.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-item p-4 bg-light border rounded">
+                <h5>AI-Powered Reminders</h5>
+                <p>Receive reminders that adjust to your daily habits and routines.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-item p-4 bg-light border rounded">
+                <h5>Comprehensive Agenda</h5>
+                <p>Keep all your tasks, events, and reminders in one organized place.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock content %}
