@@ -5,127 +5,69 @@
 
 {% block content %}
 {% if user.is_authenticated %}
-<div class="dashboard-container mx-auto px-4 py-5">
-    <!-- Dashboard Header -->
-    <div class="pricing-header text-center mb-5">
-        <h1>Your AI Smart Agenda</h1>
-        <p>Stay organized with your personalized agenda.</p>
-    </div>
-
-    <!-- Main Content -->
-    <div class="row">
-        <!-- Daily Tasks -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5>Today's Tasks</h5>
-                </div>
-                <div class="card-body">
-                    {% comment %} Loop through daily tasks provided by backend {% endcomment %}
-                    {% for task in daily_tasks %}
-                        <div class="task-item">
-                            <h6>{{ task.title }}</h6>
-                            <p>{{ task.description }}</p>
-                            <span class="badge bg-secondary">{{ task.due_time }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
+<div class="dashboard-container container py-5">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Dashboard</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            .dashboard-title {
+                text-align: center;
+                margin-bottom: 40px;
+                font-size: 2rem;
+            }
+            .course-card {
+                border: 1px solid #ddd;
+                padding: 20px;
+                text-align: center;
+                transition: transform 0.2s ease;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                cursor: pointer;
+            }
+            .course-card:hover {
+                background-color: #f1f1f1;
+                transform: translateY(-5px);
+            }
+            .course-card h3 {
+                margin: 0;
+                font-size: 1.5rem;
+            }
+            .course-card p {
+                margin: 10px 0 0;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="dashboard-title">Your Dashboard</h1>
+        <div class="row">
+            {% for course in courses %}
+            <div class="col-md-4 mb-4">
+                <a href="{% url 'course_assignments' course.course_id %}" class="text-decoration-none text-dark">
+                    <div class="course-card">
+                        <h3>{{ course.name }}</h3>
+                        <p>Course ID: {{ course.course_id }}</p>
+                        <p>Course Code: {{ course.course_code }}</p>
+                        <p><strong>View Assignments</strong></p>
+                    </div>
+                </a>
             </div>
-        </div>
-
-        <!-- Upcoming Events -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5>Upcoming Events</h5>
-                </div>
-                <div class="card-body">
-                    {% comment %} Loop through upcoming events provided by backend {% endcomment %}
-                    {% for event in upcoming_events %}
-                        <div class="event-item">
-                            <h6>{{ event.title }}</h6>
-                            <p>{{ event.date }} - {{ event.time }}</p>
-                            <span class="badge bg-info">{{ event.location }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="no-courses">No courses available.</p>
             </div>
+            {% endfor %}
         </div>
-
-        <!-- Reminders -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-warning text-dark">
-                    <h5>Reminders</h5>
-                </div>
-                <div class="card-body">
-                    {% comment %} Loop through reminders provided by backend {% endcomment %}
-                    {% for reminder in reminders %}
-                        <div class="reminder-item">
-                            <h6>{{ reminder.title }}</h6>
-                            <p>{{ reminder.description }}</p>
-                            <span class="badge bg-danger">{{ reminder.alert_time }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Recommendations -->
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5>AI Recommendations</h5>
-                </div>
-                <div class="card-body">
-                    {% comment %} Loop through AI recommendations provided by backend {% endcomment %}
-                    {% for recommendation in ai_recommendations %}
-                        <div class="recommendation-item">
-                            <h6>{{ recommendation.title }}</h6>
-                            <p>{{ recommendation.content }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
+    </body>
 </div>
 {% else %}
-<div class="landing-page-container mx-auto text-center px-4 py-5">
-    <!-- Title Section -->
-    <div class="landing-header mb-5">
-        <h1 class="display-4">Smart Agenda</h1>
-        <p class="lead">Your intelligent, all-in-one scheduling assistant.</p>
-    </div>
-
-    <!-- Description Section -->
-    <div class="description-section my-4">
-        <p class="fs-5">
-            Smart Agenda is designed to simplify your life by intelligently managing your tasks, reminders, and events in one streamlined platform. Powered by AI, Smart Agenda learns from your habits to provide timely reminders, insightful recommendations, and a structured view of your daily and upcoming plans.
-        </p>
-    </div>
-
-    <!-- Features Section -->
-    <div class="features-section row mt-5">
-        <div class="col-md-4 mb-4">
-            <div class="feature-item p-4 bg-light border rounded">
-                <h5>Personalized Scheduling</h5>
-                <p>Get personalized schedules and notifications tailored to your needs.</p>
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="feature-item p-4 bg-light border rounded">
-                <h5>AI-Powered Reminders</h5>
-                <p>Receive reminders that adjust to your daily habits and routines.</p>
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="feature-item p-4 bg-light border rounded">
-                <h5>Comprehensive Agenda</h5>
-                <p>Keep all your tasks, events, and reminders in one organized place.</p>
-            </div>
-        </div>
-    </div>
+<div class="text-center">
+    <p>Not authorized</p>
 </div>
 {% endif %}
 {% endblock content %}
