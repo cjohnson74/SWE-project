@@ -4,7 +4,8 @@ from .models import Students, Courses, Assignments, Quizzes, StudentAssignments,
 from django.shortcuts import redirect, render, get_object_or_404
 
 def HomePageView(request):
-    return render(request, 'pages/home.html')
+    courses = Courses.get_all()
+    return render(request, 'pages/home.html', {'courses': courses})
 
 def AboutPageView(request):
     return render(request, 'pages/about.html')
@@ -67,9 +68,12 @@ def CourseDeleteView(request):
 
 # Assignment Views
 def AssignmentsListView(request, course_id):
+    print(f"Requested course_id: {course_id}")
     course = Courses.get_by_id(course_id)
+    print(f"Retrieved course: {course}")
     assignments = Assignments.get_by_course_id(course_id)
-    return render(request, 'pages/course_assignments.html', {'course': course, 'assignments': assignments})
+    return render(request, 'pages/assignments.html', {'course': course, 'assignments': assignments})
+
 
 def AssignmentDetailsView(request, assignment_id):
     assignment = Assignments.get_by_id(int(assignment_id))
@@ -87,6 +91,9 @@ def AssignmentUpdateView(request):
 def AssignmentDeleteView(request):
     Assignments.delete(request.GET.get('canvas_id'))
     return redirect('assignment_list')
+
+def AssignmentTasksView(request, assignment_id):
+    return render(request, 'pages/assignment_tasks.html', {'assignment_id': assignment_id})
 
 # Student Assignment Views
 def StudentAssignmentListView(request):

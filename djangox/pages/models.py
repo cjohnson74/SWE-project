@@ -19,7 +19,7 @@ class Students():
         self.login_id = login_id
         self.email = email
         self.avatar_url = avatar_url
-    
+
     def save(self):
         client = MongoDBClient()
         students_collection = client.db[self.collection_name]
@@ -30,13 +30,13 @@ class Students():
         client = MongoDBClient()
         students_collection = client.db[Students.collection_name]
         return list(students_collection.find())
-    
+
     @staticmethod
     def get_by_id(canvas_id):
         client = MongoDBClient()
         students_collection = client.db[Students.collection_name]
         return students_collection.find_one({'canvas_id': canvas_id})
-    
+
     @staticmethod
     def delete(canvas_id):
         client = MongoDBClient()
@@ -100,13 +100,32 @@ class Courses():
         client = MongoDBClient()
         courses_collection = client.db[Courses.collection_name]
         return list(courses_collection.find())
-    
+
     @staticmethod
     def get_by_id(course_id):
         client = MongoDBClient()
-        courses_collection = client.db[Courses.collection_name]
-        return courses_collection.find_one({'course_id': course_id})
-    
+
+        # Check if the MongoDB client is connected and accessing the correct database
+        try:
+            courses_collection = client.db[Courses.collection_name]
+            print(f"Connected to collection: {Courses.collection_name}")
+
+            # Log the exact query being made
+            print(f"Searching for course with course_id: {course_id}")
+
+            # Perform the query and log the result
+            course = courses_collection.find_one({'course_id': course_id})
+            if course:
+                print(f"Course found: {course}")
+            else:
+                print(f"No course found with course_id: {course_id}")
+
+            return course
+        except Exception as e:
+            print(f"Error accessing MongoDB: {e}")
+            return None
+
+
     @staticmethod
     def delete(course_id):
         client = MongoDBClient()
@@ -182,25 +201,25 @@ class Assignments():
         client = MongoDBClient()
         assignments_collection = client.db[self.collection_name]
         assignments_collection.insert_one(self.__dict__)
-    
+
     @staticmethod
     def get_all():
         client = MongoDBClient()
         assignments_collection = client.db[Assignments.collection_name]
         return list(assignments_collection.find())
-    
+
     @staticmethod
     def get_by_id(assignment_id):
         client = MongoDBClient()
         assignments_collection = client.db[Assignments.collection_name]
         return assignments_collection.find_one({'assignment_id': assignment_id})
-    
+
     @staticmethod
     def get_by_course_id(course_id):
         client = MongoDBClient()
         assignments_collection = client.db[Assignments.collection_name]
         return list(assignments_collection.find({'course_id': int(course_id)}))
-    
+
     @staticmethod
     def delete(canvas_id):
         client = MongoDBClient()
@@ -232,13 +251,13 @@ class CustomTasks():
         client = MongoDBClient()
         custom_tasks_collection = client.db[CustomTasks.collection_name]
         return list(custom_tasks_collection.find())
-    
+
     @staticmethod
     def get_by_id(id):
         client = MongoDBClient()
         custom_tasks_collection = client.db[CustomTasks.collection_name]
         return custom_tasks_collection.find_one({'_id': id})
-    
+
     @staticmethod
     def delete(id):
         client = MongoDBClient()
@@ -270,13 +289,13 @@ class StudentAssignments():
         client = MongoDBClient()
         student_assignments_collection = client.db[StudentAssignments.collection_name]
         return list(student_assignments_collection.find())
-    
+
     @staticmethod
     def get_by_id(id):
         client = MongoDBClient()
         student_assignments_collection = client.db[StudentAssignments.collection_name]
         return student_assignments_collection.find_one({'_id': id})
-    
+
     @staticmethod
     def delete(id):
         client = MongoDBClient()
@@ -313,13 +332,13 @@ class Quizzes():
         client = MongoDBClient()
         quizzes_collection = client.db[Quizzes.collection_name]
         return list(quizzes_collection.find())
-    
+
     @staticmethod
     def get_by_id(canvas_id):
         client = MongoDBClient()
         quizzes_collection = client.db[Quizzes.collection_name]
         return quizzes_collection.find_one({'canvas_id': canvas_id})
-    
+
     @staticmethod
     def delete(canvas_id):
         client = MongoDBClient()
@@ -346,19 +365,19 @@ class Submissions():
         client = MongoDBClient()
         submissions_collection = client.db[self.collection_name]
         submissions_collection.insert_one(self.__dict__)
-    
+
     @staticmethod
     def get_all():
         client = MongoDBClient()
         submissions_collection = client.db[Submissions.collection_name]
         return list(submissions_collection.find())
-    
+
     @staticmethod
     def get_by_id(canvas_id):
         client = MongoDBClient()
         submissions_collection = client.db[Submissions.collection_name]
         return submissions_collection.find_one({'canvas_id': canvas_id})
-    
+
     @staticmethod
     def delete(canvas_id):
         client = MongoDBClient()
@@ -388,19 +407,19 @@ class Files():
         client = MongoDBClient()
         files_collection = client.db[self.collection_name]
         files_collection.insert_one(self.__dict__)
-    
+
     @staticmethod
     def get_all():
         client = MongoDBClient()
         files_collection = client.db[Files.collection_name]
         return list(files_collection.find())
-    
+
     @staticmethod
     def get_by_id(file_id):
         client = MongoDBClient()
         files_collection = client.db[Files.collection_name]
         return files_collection.find_one({'file_id': file_id})
-    
+
     @staticmethod
     def delete(file_id):
         client = MongoDBClient()
@@ -432,13 +451,13 @@ class Deadlines():
         client = MongoDBClient()
         deadlines_collection = client.db[Deadlines.collection_name]
         return list(deadlines_collection.find())
-    
+
     @staticmethod
     def get_by_id(canvas_id):
         client = MongoDBClient()
         deadlines_collection = client.db[Deadlines.collection_name]
         return deadlines_collection.find_one({'canvas_id': canvas_id})
-    
+
     @staticmethod
     def delete(canvas_id):
         client = MongoDBClient()
