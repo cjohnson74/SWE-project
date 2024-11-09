@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django import forms
 from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
+from .forms import fileForm
+from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
 
 def HomePageView(request):
@@ -247,6 +249,33 @@ def add_deadline(request):
         form = forms.DeadlineForm()
 
     return render(request, 'pages/deadline_form.html', {'form': form})
+
+def upload_file(request):
+    if request.method == 'POST':
+        form = fileForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()  # Save the uploaded file
+            form = fileForm()  # Reset the form after a successful upload
+            return render(request, 'pages/upload.html', {'form': form, 'success': True})
+    else:
+        form = fileForm()
+
+    return render(request, 'pages/upload.html', {'form': form})
+
+def delete_file(request, file_id):
+    file_instance = fileModel.objects.get(id=file_id)
+    
+    # Delete the file from the file system
+    file_instance.file.delete()
+    
+    # Delete the database record
+    file_instance.delete()
+    
+    return redirect('file_list')
+
+def file_list(request):
+    files = fileModel.objects.all()
+    return render(request, 'pages/file_list.html', {'files': files})
 
 # def course_detail(request, course_id):
 #     """View to display details of a specific course."""
