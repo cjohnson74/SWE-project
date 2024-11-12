@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django import forms
 from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
 from django.shortcuts import redirect, render, get_object_or_404
+from .claude_service import get_assignment_breakdown
 
 def HomePageView(request):
     return render(request, 'pages/home.html')
@@ -213,6 +214,16 @@ def DeadlineUpdateView(request):
 def DeadlineDeleteView(request):
     Deadlines.delete(request.GET.get('canvas_id'))
     return redirect('deadline_list')
+
+def AssignmentBreakdownView(request):
+    breakdown = None
+    if request.method == 'POST':
+        assignment_description = request.POST.get('assignment_description')
+        try:
+            breakdown = get_assignment_breakdown(assignment_description)
+        except Exception as e:
+            breakdown = str(e)
+    return render(request, 'pages/assignment_breakdown.html', {'breakdown': breakdown})
 
 def add_custom_task(request):
     if request.method == 'POST':

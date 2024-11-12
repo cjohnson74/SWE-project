@@ -57,17 +57,15 @@ $ source .venv/bin/activate
 SECRET_KEY=<django-secret-key>
 DEBUG=True
 
-# MongoDB
-DB_HOST='<mongodb-host>'
-DB_PORT=<mongodb-port>
-DB_NAME='<mongodb-name>'
-DB_USER='<mongodb-user>'
-DB_PASSWORD='<mongodb-password>'
-DB_AUTH_SOURCE='<mongodb-auth-source>'
-
 # Canvas API
 CANVAS_ACCESS_TOKEN='<canvas-access-token>'
 ENROLLMENT_TERM_ID=10160000000002195
+
+# Django
+DATABASE_URL='sqlite:///db.sqlite3'
+
+# Claude API
+CLAUDE_API_KEY='<claude-api-key>'
 ```
 
 ### Getting Canvas Access Token

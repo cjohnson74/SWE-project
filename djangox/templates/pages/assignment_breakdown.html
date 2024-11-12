@@ -1,0 +1,23 @@
+<!-- djangox/templates/pages/task_breakdown.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Breakdown</title>
+</head>
+<body>
+    <h1>Task Breakdown</h1>
+    <form method="POST">
+        {% csrf_token %}
+        <label for="task_description">Task Description:</label>
+        <textarea id="task_description" name="task_description" required></textarea>
+        <button type="submit">Get Breakdown</button>
+    </form>
+
+    {% if breakdown %}
+        <h2>Breakdown:</h2>
+        <pre>{{ breakdown|json_script:"breakdown" }}</pre>
+    {% endif %}
+</body>
+</html>
