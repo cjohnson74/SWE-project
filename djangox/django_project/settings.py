@@ -113,13 +113,13 @@ DATABASES = {
 #     }
 # }
 
-# MongoDB
-MONGODB_SETTINGS = {
-    'host': os.getenv("DB_HOST"),
-    'database': os.getenv("DB_NAME"),
-    'username': os.getenv("DB_USER"),
-    'password': os.getenv("DB_PASSWORD"),
-}
+# # MongoDB
+# MONGODB_SETTINGS = {
+#     'host': os.getenv("DB_HOST"),
+#     'database': os.getenv("DB_NAME"),
+#     'username': os.getenv("DB_USER"),
+#     'password': os.getenv("DB_PASSWORD"),
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
