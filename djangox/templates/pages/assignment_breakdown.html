@@ -1,23 +1,619 @@
-<!-- djangox/templates/pages/task_breakdown.html -->
-<!DOCTYPE html>
-<html lang="en">
+<!-- djangox/templates/pages/assignment_breakdown.html -->
+{% extends '_base.html' %}
+
+{% load static %}
+
+{% block title %}Assignment Breakdown{% endblock %}
+
+{% block content %}
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Breakdown</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 </head>
-<body>
-    <h1>Task Breakdown</h1>
-    <form method="POST">
+
+<div class="container mt-5">
+    <h1 class="text-center text-danger animate__animated animate__bounce">🎉 Assignment Breakdown 🎉</h1>
+
+    <!-- Progress Tracker Card -->
+    <div class="card my-4">
+        <div class="card-body">
+            <h5 class="card-title">Progress Tracker</h5>
+            <div id="progressTracker" class="progress my-4">
+                <div class="progress-bar bg-info" id="progressFill" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <p id="progressMessage" class="text-center">You have completed <span id="completedCount">0</span> out of <span id="totalCount">0</span> assignments.</p>
+        </div>
+    </div>
+
+    <!-- Revamped Loading Spinner Card -->
+    <div id="loading" class="loading card" style="display: none;">
+        <div class="card-body text-center">
+            <div class="spinner-border text-info" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <h2 class="mt-3">Fetching Your Breakdown... 🚀</h2>
+            <div class="progress my-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="loadingProgress" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    <form id="breakdownForm" method="POST" onsubmit="return submitForm(event)" action="{% url 'assignment_breakdown' assignment_id=assignment_id %}">
         {% csrf_token %}
-        <label for="task_description">Task Description:</label>
-        <textarea id="task_description" name="task_description" required></textarea>
-        <button type="submit">Get Breakdown</button>
+        <div class="text-center">
+            <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Breakdown 📊</button>
+        </div>
     </form>
 
-    {% if breakdown %}
-        <h2>Breakdown:</h2>
-        <pre>{{ breakdown|json_script:"breakdown" }}</pre>
-    {% endif %}
-</body>
-</html>
+    <div id="breakdownResults" class="breakdown-results" style="display: none;">
+        <!-- Analysis Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3 class="collapsible dropdown-toggle" id="analysisDropdown" data-toggle="collapse" data-target="#analysisContent" aria-haspopup="true" aria-expanded="false">
+                    Analysis <span class="arrow">▼</span>
+                </h3>
+                <div id="analysisContent" class="collapse">
+                    <p><strong>Initial Assessment:</strong> <span id="initialAssessment" class="highlight">{{ analysis.thought_process.initial_assessment }}</span></p>
+                    <p><strong>Complexity Evaluation:</strong> <span id="complexityEvaluation" class="highlight">{{ analysis.thought_process.complexity_evaluation }}</span></p>
+                    <p><strong>Complexity Scores:</strong></p>
+                    <ul id="complexityScores" class="score-list">
+                        <li>Overall Complexity: {{ analysis.thought_process.complexity_scores.overall_complexity }}</li>
+                        <li>Research Complexity: {{ analysis.thought_process.complexity_scores.research_complexity }}</li>
+                        <li>Technical Complexity: {{ analysis.thought_process.complexity_scores.technical_complexity }}</li>
+                        <li>Time Complexity: {{ analysis.thought_process.complexity_scores.time_complexity }}</li>
+                        <li><strong>Explanation:</strong> {{ analysis.thought_process.complexity_scores.complexity_explanation }}</li>
+                    </ul>
+                    <p><strong>Key Requirements:</strong></p>
+                    <ul id="keyRequirements" class="requirement-list">
+                        {% for requirement in analysis.thought_process.key_requirements %}
+                            <li>{{ requirement }}</li>
+                        {% endfor %}
+                    </ul>
+                    <p><strong>Potential Challenges:</strong></p>
+                    <ul id="potentialChallenges" class="challenge-list">
+                        {% for challenge in analysis.thought_process.potential_challenges %}
+                            <li>{{ challenge }}</li>
+                        {% endfor %}
+                    </ul>
+                    <p><strong>Skill Level Considerations:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment Breakdown Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3 class="collapsible dropdown-toggle" id="breakdownDropdown" data-toggle="collapse" data-target="#breakdownContent" aria-haspopup="true" aria-expanded="false">
+                    Assignment Breakdown <span class="arrow">▼</span>
+                </h3>
+                <div id="breakdownContent" class="collapse">
+                    <p><strong>Total Estimated Time:</strong> <span id="totalEstimatedTime" class="highlight">{{ total_estimated_time }}</span></p>
+                    <p><strong>Work Distribution:</strong> <span id="workDistribution" class="highlight">{{ work_distribution }}</span></p>
+                    <p><strong>Breaks and Buffer:</strong> <span id="breaksAndBuffer" class="highlight">{{ breaks_and_buffer }}</span></p>
+                    <h4>Tasks:</h4>
+                    <div id="taskList" class="task-list">
+                        {% for task in assignment_breakdown %}
+                            <div class="task-card">
+                                <div class="task-header" onclick="toggleTaskDetails(this)">
+                                    <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
+                                    <strong>Task {{ task.task_number }}:</strong> {{ task.description }} (Estimated Time: {{ task.estimated_time }}) - Due: {{ task.due_date|date:"F j, Y" }}
+                                </div>
+                                <div class="task-details" style="display: none;">
+                                    <em>Tips:</em> {{ task.tips }}<br>
+                                    <em>YouTube Resources:</em> 
+                                    {% for resource in task.youtube_resources %}
+                                        <a href="{{ resource.link }}" target="_blank">{{ resource.title }}</a>{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                    <br>
+                                    <em>Priority:</em> {{ task.priority }}<br>
+                                    <em>Potential Distractions:</em> 
+                                    {% if task.potential_distractions %}
+                                        {% if task.potential_distractions|length > 0 %}
+                                            {{ task.potential_distractions|join:', ' }}<br>
+                                        {% else %}
+                                            None<br>
+                                        {% endif %}
+                                    {% else %}
+                                        None<br>
+                                    {% endif %}
+                                    <em>Distraction Mitigation:</em> {{ task.distraction_mitigation }}<br>
+                                    <em>Focus Techniques:</em> 
+                                    {% if task.focus_techniques %}
+                                        {% if task.focus_techniques|length > 0 %}
+                                            {{ task.focus_techniques|join:', ' }}<br>
+                                        {% else %}
+                                            None<br>
+                                        {% endif %}
+                                    {% else %}
+                                        None<br>
+                                    {% endif %}
+                                    <em>Reward:</em> {{ task.reward }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <h4>Next Task to Focus On:</h4>
+                    {% with next_task=None %}
+                        {% for task in assignment_breakdown %}
+                            {% if not task.completed %}
+                                {% if next_task is None or task.due_date < next_task.due_date %}
+                                    {% with next_task=task %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if next_task %}
+                            <p><strong>Next Task:</strong> {{ next_task.description }} (Due: {{ next_task.due_date|date:"F j, Y" }})</p>
+                            <p><strong>Focus Mode:</strong> Prioritize this task to meet the deadline!</p>
+                        {% else %}
+                            <p>No upcoming tasks.</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Resources Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3>Additional Resources</h3>
+                {% if additional_resources %}
+                    <ul>
+                        {% for resource in additional_resources %}
+                            <li>{{ resource }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No additional resources available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reasoning Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3>Reasoning</h3>
+                {% if reasoning %}
+                    <p>{{ reasoning }}</p>
+                {% else %}
+                    <p>No reasoning provided.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Progress Tracking Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3>Progress Tracking</h3>
+                {% if progress_tracking %}
+                    <p>{{ progress_tracking }}</p>
+                {% else %}
+                    <p>No progress tracking information available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ADHD Specific Strategies Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3>ADHD Specific Strategies</h3>
+                <h4>Time Management:</h4>
+                {% if adhd_specific_strategies.time_management %}
+                    <ul>
+                        {% for strategy in adhd_specific_strategies.time_management %}
+                            <li>{{ strategy }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No time management strategies available.</p>
+                {% endif %}
+                <h4>Focus Improvement:</h4>
+                {% if adhd_specific_strategies.focus_improvement %}
+                    <ul>
+                        {% for strategy in adhd_specific_strategies.focus_improvement %}
+                            <li>{{ strategy }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No focus improvement strategies available.</p>
+                {% endif %}
+                <h4>Motivation Boosters:</h4>
+                {% if adhd_specific_strategies.motivation_boosters %}
+                    <ul>
+                        {% for strategy in adhd_specific_strategies.motivation_boosters %}
+                            <li>{{ strategy }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No motivation boosters available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reward System Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3>Reward System</h3>
+                <h4>Milestone Rewards:</h4>
+                {% if assignment_breakdown.reward_system.milestone_rewards %}
+                    <ul>
+                        {% for reward in assignment_breakdown.reward_system.milestone_rewards %}
+                            <li>{{ reward }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No milestone rewards available.</p>
+                {% endif %}
+                <h4>Completion Reward:</h4>
+                {% if assignment_breakdown.reward_system.completion_reward %}
+                    <p>{{ assignment_breakdown.reward_system.completion_reward }}</p>
+                {% else %}
+                    <p>No completion reward available.</p>
+                {% endif %}
+                <h4>Progress Visualization:</h4>
+                {% if assignment_breakdown.reward_system.progress_visualization %}
+                    <p>{{ assignment_breakdown.reward_system.progress_visualization }}</p>
+                {% else %}
+                    <p>No progress visualization information available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <p id="noBreakdownMessage" style="display: none;" class="error-message">No breakdown available. Click the button to get the breakdown.</p>
+</div>
+
+<script>
+    // Function to play a celebratory sound
+    function playCelebrationSound() {
+        const audio = new Audio('{% static "sounds/celebration.mp3" %}'); // Ensure you have a sound file in your static directory
+        audio.play();
+    }
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'flex'; // Show loading visual
+        document.getElementById('breakdownForm').style.display = 'none'; // Hide the form
+        document.querySelector('.container').style.backgroundColor = '#2c3e50'; // Dark background for focus
+        document.querySelector('.container').style.color = 'white'; // White text for contrast
+
+        // Reset loading progress
+        const loadingProgress = document.getElementById('loadingProgress');
+        loadingProgress.style.width = '0%';
+        loadingProgress.setAttribute('aria-valuenow', 0);
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none'; // Hide loading spinner
+        document.getElementById('breakdownForm').style.display = 'block'; // Show the form again
+        document.querySelector('.container').style.backgroundColor = ''; // Reset container background color
+        document.querySelector('.container').style.color = ''; // Reset container text color
+    }
+
+    function updateLoadingProgress(percentage) {
+        const loadingProgress = document.getElementById('loadingProgress');
+        loadingProgress.style.width = `${percentage}%`;
+        loadingProgress.setAttribute('aria-valuenow', percentage);
+    }
+
+    function submitForm(event) {
+        event.preventDefault(); // Prevent the default form submission
+        showLoading(); // Show loading visual
+        
+        const formData = new FormData(document.getElementById('breakdownForm'));
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json(); // Expecting JSON response
+        })
+        .then(data => {
+            console.log("Response Data:", data); // Log the data for debugging
+            
+            const breakdownResultsElement = document.getElementById('breakdownResults');
+            const noBreakdownMessage = document.getElementById('noBreakdownMessage');
+
+            if (data) {
+                breakdownResultsElement.style.display = 'block'; // Show results
+                noBreakdownMessage.style.display = 'none'; // Hide no breakdown message
+
+                // Play celebration sound
+                playCelebrationSound();
+
+                // Trigger confetti
+                confetti();
+
+                // Update progress tracker
+                const totalAssignments = data.assignment_breakdown.length;
+                const completedAssignments = data.assignment_breakdown.filter(task => task.completed).length;
+                document.getElementById('completedCount').textContent = completedAssignments;
+                document.getElementById('totalCount').textContent = totalAssignments;
+                document.getElementById('progressFill').style.width = `${(completedAssignments / totalAssignments) * 100}%`;
+
+                // Populate complexity scores
+                const complexityScores = document.getElementById('complexityScores');
+                complexityScores.innerHTML = ''; // Clear previous scores
+                for (const [key, value] of Object.entries(data.analysis.thought_process.complexity_scores)) {
+                    const li = document.createElement('li');
+                    li.textContent = `${key}: ${value}`;
+                    complexityScores.appendChild(li);
+                }
+
+                // Populate key requirements
+                const keyRequirements = document.getElementById('keyRequirements');
+                keyRequirements.innerHTML = ''; // Clear previous requirements
+                data.analysis.thought_process.key_requirements.forEach(req => {
+                    const li = document.createElement('li');
+                    li.textContent = req;
+                    keyRequirements.appendChild(li);
+                });
+
+                // Populate potential challenges
+                const potentialChallenges = document.getElementById('potentialChallenges');
+                potentialChallenges.innerHTML = ''; // Clear previous challenges
+                data.analysis.thought_process.potential_challenges.forEach(challenge => {
+                    const li = document.createElement('li');
+                    li.textContent = challenge;
+                    potentialChallenges.appendChild(li);
+                });
+
+                // Populate skill level considerations
+                document.getElementById('skillLevelConsiderations').textContent = data.analysis.thought_process.skill_level_considerations;
+
+                // Populate total estimated time
+                document.getElementById('totalEstimatedTime').textContent = data.total_estimated_time;
+
+                // Populate work distribution
+                document.getElementById('workDistribution').textContent = data.work_distribution;
+
+                // Populate breaks and buffer
+                document.getElementById('breaksAndBuffer').textContent = data.breaks_and_buffer;
+
+                // Populate task list
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = ''; // Clear previous tasks
+                data.assignment_breakdown.forEach(task => {
+                    const taskCard = document.createElement('div');
+                    taskCard.className = 'task-card';
+                    taskCard.style.borderColor = getBorderColor(task.estimated_time);
+                    taskCard.innerHTML = `
+                        <div class="task-header" onclick="toggleTaskDetails(this)">
+                            <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
+                            <strong>Task ${task.task_number}:</strong> ${task.description} (Estimated Time: ${task.estimated_time}) - Due: ${new Date(task.due_date).toLocaleString()}
+                        </div>
+                        <div class="task-details" style="display: none;">
+                            <em>Tips:</em> ${task.tips}<br>
+                            <em>YouTube Resources:</em> ${task.youtube_resources.map(resource => `<a href="${resource.link}" target="_blank">${resource.title}</a>`).join(', ')}
+                            <br>
+                            <em>Priority:</em> ${task.priority}<br>
+                            <em>Potential Distractions:</em> ${task.potential_distractions.length > 0 ? task.potential_distractions.join(', ') : 'None'}<br>
+                            <em>Distraction Mitigation:</em> ${task.distraction_mitigation}<br>
+                            <em>Focus Techniques:</em> ${task.focus_techniques.length > 0 ? task.focus_techniques.join(', ') : 'None'}<br>
+                            <em>Reward:</em> ${task.reward}
+                        </div>
+                    `;
+                    taskList.appendChild(taskCard);
+                });
+            } else {
+                console.error('Breakdown results or data element not found.');
+            }
+            hideLoading(); // Hide loading spinner after successful response
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while processing your request: ' + error.message);
+            hideLoading(); // Hide loading spinner on error
+        });
+    }
+
+    function updateProgress() {
+        const checkboxes = document.querySelectorAll('.task-checkbox');
+        const totalTasks = checkboxes.length;
+        const completedTasks = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+
+        // Update progress counts
+        document.getElementById('completedCount').textContent = completedTasks;
+        document.getElementById('totalCount').textContent = totalTasks;
+        document.getElementById('progressFill').style.width = `${(completedTasks / totalTasks) * 100}%`;
+
+        // Visual feedback for completed tasks
+        checkboxes.forEach(checkbox => {
+            const taskCard = checkbox.closest('.task-card');
+            if (checkbox.checked) {
+                taskCard.style.backgroundColor = '#d5e8d4'; // Light green background for completed tasks
+                taskCard.querySelector('.task-header').style.textDecoration = 'line-through'; // Strikethrough text
+            } else {
+                taskCard.style.backgroundColor = ''; // Reset background color
+                taskCard.querySelector('.task-header').style.textDecoration = 'none'; // Reset strikethrough
+            }
+        });
+    }
+
+    function toggleSection(header) {
+        const content = header.nextElementSibling;
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        header.querySelector('.arrow').textContent = content.style.display === 'block' ? '▲' : '▼';
+    }
+
+    function toggleTaskDetails(header) {
+        const details = header.nextElementSibling;
+        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function getBorderColor(estimatedTime) {
+        const timeRange = estimatedTime.split('-').map(t => parseInt(t));
+        const averageTime = (timeRange.length === 2) ? (timeRange[0] + timeRange[1]) / 2 : timeRange[0];
+        
+        if (averageTime <= 30) return '#2ecc71'; // Green for short tasks
+        if (averageTime <= 60) return '#f1c40f'; // Yellow for medium tasks
+        return '#e74c3c'; // Red for long tasks
+    }
+</script>
+
+<style>
+    body {
+        font-family: 'Comic Sans MS', cursive, sans-serif; /* Fun font */
+        background-color: #f9f9f9; /* Light background */
+        color: #333; /* Dark text for contrast */
+        margin: 0;
+        padding: 20px;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: auto;
+        background: #ffffff; /* White background for the container */
+        padding: 20px;
+        border-radius: 15px; /* More rounded corners */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Softer shadow */
+        transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+    }
+
+    h1 {
+        color: #e74c3c; /* Bright red for headings */
+        text-align: center;
+        font-size: 3.5em; /* Larger font size for emphasis */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+        margin-bottom: 20px; /* Space below heading */
+    }
+
+    .progress-tracker {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .progress-bar {
+        width: 100%;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 30px; /* Increased height for visibility */
+        margin-top: 10px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: #3498db; /* Bright blue */
+        width: 0; /* Start with 0 width */
+        transition: width 0.5s; /* Smooth transition for progress */
+    }
+
+    .loading {
+        position: fixed; /* Fix the position to cover the entire screen */
+        top: 0; /* Align to the top */
+        left: 0; /* Align to the left */
+        width: 100vw; /* Full width of the viewport */
+        height: 100vh; /* Full height of the viewport */
+        display: flex; /* Use flexbox for centering */
+        flex-direction: column; /* Stack items vertically */
+        align-items: center; /* Center items horizontally */
+        justify-content: center; /* Center items vertically */
+        background-color: rgba(44, 62, 80, 0.8); /* Semi-transparent dark background */
+        z-index: 9999; /* Ensure it appears above other content */
+        color: white; /* White text for contrast */
+        font-size: 2em; /* Larger font for loading message */
+    }
+
+    .loading-gif {
+        width: 100%; /* Set width to 100% of the viewport */
+        height: 100%; /* Set height to 100% of the viewport */
+        object-fit: cover; /* Cover the entire area while maintaining aspect ratio */
+    }
+
+    .task-card {
+        background-color: #ffffff; /* White background for task cards */
+        border: 2px solid #3498db; /* Bright blue border */
+        border-radius: 10px; /* More rounded corners */
+        padding: 20px; /* Increased padding */
+        margin: 10px 0;
+        cursor: pointer;
+        transition: box-shadow 0.3s, transform 0.2s; /* Add transform for task card */
+        position: relative; /* For positioning icons */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    }
+
+    .task-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+        transform: scale(1.03); /* Slightly enlarge task card on hover */
+    }
+
+    .task-header {
+        font-weight: bold;
+        color: #2c3e50;
+        cursor: pointer;
+        display: flex; /* Flexbox for alignment */
+        align-items: center; /* Center items vertically */
+        font-size: 1.2em; /* Slightly larger font size */
+    }
+
+    .task-header input[type="checkbox"] {
+        margin-right: 10px; /* Space between checkbox and text */
+        transform: scale(1.5); /* Larger checkbox */
+    }
+
+    .task-details {
+        margin-top: 10px;
+        color: #555;
+        line-height: 1.5; /* Increased line height for readability */
+    }
+
+    .arrow {
+        float: right;
+        transition: transform 0.3s; /* Smooth transition for arrow */
+    }
+
+    .collapsible.active .arrow {
+        transform: rotate(180deg); /* Rotate arrow when active */
+    }
+
+    .btn {
+        background-color: #e74c3c; /* Bright red for the button */
+        color: white; /* Text color */
+        padding: 15px 25px; /* Increased padding for a better touch target */
+        border: none; /* Remove default border */
+        border-radius: 10px; /* More rounded corners */
+        cursor: pointer; /* Pointer cursor on hover */
+        font-size: 18px; /* Larger font size */
+        font-weight: bold; /* Bold text */
+        text-align: center; /* Center text */
+        text-decoration: none; /* Remove underline */
+        display: inline-block; /* Allow margin and padding */
+        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; /* Smooth transitions */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    }
+
+    .btn:hover {
+        background-color: #c0392b; /* Darker shade on hover */
+        transform: translateY(-2px); /* Slight lift effect */
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
+    }
+
+    .btn:active {
+        transform: translateY(0); /* Reset lift effect on click */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Reset shadow */
+    }
+
+    .button-container {
+        display: flex; /* Use flexbox */
+        justify-content: center; /* Center horizontally */
+        margin: 20px 0; /* Optional: Add some margin for spacing */
+    }
+</style>
+
+{% endblock content %}

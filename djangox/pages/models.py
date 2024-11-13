@@ -122,7 +122,7 @@ class Courses():
 class Assignments():
     collection_name = 'Assignments'
 
-    def __init__(self, canvas_id, course, name, description, due_at, points_possible, submission_types, allowed_extensions, file_ids, allowed_attempts, annotatable_attachment_id, anonymize_students, anonymous_grading, anonymous_instructor_annotations, anonymous_peer_reviews, anonymous_submissions, assignment_group_id, automatic_peer_reviews, can_duplicate, course_id, created_at, important_dates, in_closed_grading_period, intra_group_peer_reviews, is_quiz_assignment, lock_at, lock_explanation, lock_info, locked_for_user, lti_context_id, max_name_length, moderated_grading, muted, omit_from_final_grade, only_visible_to_overrides, original_assignment_id, original_assignment_name, original_course_id, original_lti_resource_link_id, original_quiz_id, peer_reviews, position, post_manually, post_to_sis, published, quiz_id, require_lockdown_browser, restrict_quantitative_data, secure_params, submissions_download_url, unlock_at, updated_at, visible_to_everyone, workflow_state):
+    def __init__(self, canvas_id, course, name, description, due_at, points_possible, submission_types, allowed_extensions, file_ids, allowed_attempts, annotatable_attachment_id, anonymize_students, anonymous_grading, anonymous_instructor_annotations, anonymous_peer_reviews, anonymous_submissions, assignment_group_id, automatic_peer_reviews, can_duplicate, course_id, created_at, important_dates, in_closed_grading_period, intra_group_peer_reviews, is_quiz_assignment, lock_at, lock_explanation, lock_info, locked_for_user, lti_context_id, max_name_length, moderated_grading, muted, omit_from_final_grade, only_visible_to_overrides, assignment_id, original_assignment_name, original_course_id, original_lti_resource_link_id, original_quiz_id, peer_reviews, position, post_manually, post_to_sis, published, quiz_id, require_lockdown_browser, restrict_quantitative_data, secure_params, submissions_download_url, unlock_at, updated_at, visible_to_everyone, workflow_state):
         self.canvas_id = canvas_id
         self.course = course
         self.name = name
@@ -158,7 +158,7 @@ class Assignments():
         self.muted = muted
         self.omit_from_final_grade = omit_from_final_grade
         self.only_visible_to_overrides = only_visible_to_overrides
-        self.original_assignment_id = original_assignment_id
+        self.assignment_id = assignment_id
         self.original_assignment_name = original_assignment_name
         self.original_course_id = original_course_id
         self.original_lti_resource_link_id = original_lti_resource_link_id
@@ -193,7 +193,9 @@ class Assignments():
     def get_by_id(assignment_id):
         client = MongoDBClient()
         assignments_collection = client.db[Assignments.collection_name]
-        return assignments_collection.find_one({'assignment_id': assignment_id})
+        assignment = assignments_collection.find_one({'assignment_id': int(assignment_id)})
+        print(assignment)
+        return assignment
     
     @staticmethod
     def get_by_course_id(course_id):

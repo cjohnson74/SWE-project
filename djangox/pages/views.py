@@ -75,7 +75,7 @@ def AssignmentsListView(request, course_id):
 def AssignmentDetailsView(request, assignment_id):
     assignment = Assignments.get_by_id(int(assignment_id))
     course = Courses.get_by_id(assignment['course_id'])
-    return render(request, 'pages/assignment_details.html', {'course': course, 'assignment': assignment})
+    return render(request, 'pages/assignment_details.html', {'course': course, 'assignment': assignment, 'assignment_id': assignment_id})
 
 def AssignmentCreateView(request):
     Assignments.create(request.POST)
@@ -215,15 +215,20 @@ def DeadlineDeleteView(request):
     Deadlines.delete(request.GET.get('canvas_id'))
     return redirect('deadline_list')
 
-def AssignmentBreakdownView(request):
+def AssignmentBreakdownView(request, assignment_id):
     breakdown = None
+    # student_id = request.user.id  # Uncomment if you need to use student ID
+
     if request.method == 'POST':
-        assignment_description = request.POST.get('assignment_description')
         try:
-            breakdown = get_assignment_breakdown(assignment_description)
+            breakdown = get_assignment_breakdown(assignment_id)
+            print("Breakdown:", JsonResponse(breakdown))
+            return JsonResponse(breakdown)
         except Exception as e:
-            breakdown = str(e)
-    return render(request, 'pages/assignment_breakdown.html', {'breakdown': breakdown})
+            print("Error fetching breakdown:", e)
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return render(request, 'pages/assignment_breakdown.html', {'assignment_id': assignment_id, 'breakdown': breakdown})
 
 def add_custom_task(request):
     if request.method == 'POST':

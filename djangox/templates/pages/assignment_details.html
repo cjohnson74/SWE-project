@@ -60,6 +60,7 @@
     <p><strong>Last Updated:</strong> {{ assignment.updated_at }}</p>
     
     <a href="{% url 'course_assignments' assignment.course_id %}" class="back-link">Back to Assignments</a>
+    <a href="{% url 'assignment_breakdown' assignment.assignment_id %}" class="back-link">Break Down Assignment</a>
 </body>
 </html>
 {% endblock content %}
