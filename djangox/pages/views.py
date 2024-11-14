@@ -1,224 +1,245 @@
-from django.http import JsonResponse
-from django import forms
+from .forms import CustomTaskForm, DeadlineForm
 from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
 from .forms import fileForm
 from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
+from django.http import HttpResponse
+from django.template import loader
 
 def HomePageView(request):
-    return render(request, 'pages/home.html')
+    template = loader.get_template('pages/home.html')
+    return HttpResponse(template.render({}, request))
 
 def AboutPageView(request):
-    return render(request, 'pages/about.html')
+    template = loader.get_template('pages/about.html')
+    return HttpResponse(template.render({}, request))
 
 def QuizListView(request):
-    quizzes = Quizzes.get_all()
-    return render(request, 'pages/quiz_list.html', {'quizzes': quizzes})
-
+    quizzes = Quizzes.objects.all()
+    template = loader.get_template('pages/quiz_list.html')
+    return HttpResponse(template.render({'quizzes': quizzes}, request))
 
 def AssignmentListView(request):
-    assignments = Assignments.get_all()
-    return render(request, 'pages/assignment_list.html', {'assignments': assignments})
-
+    assignments = Assignments.objects.all()
+    template = loader.get_template('pages/assignment_list.html')
+    return HttpResponse(template.render({'assignments': assignments}, request))
 
 def DeadlineListView(request):
-    deadlines = Deadlines.get_all()
-    return render(request, 'pages/deadline_list.html', {'deadlines': deadlines})
+    deadlines = Deadlines.objects.all()
+    template = loader.get_template('pages/deadline_list.html')
+    return HttpResponse(template.render({'deadlines': deadlines}, request))
 
 # Student Views
 def StudentListView(request):
-    students = Students.get_all()
-    return render(request, 'pages/student_list.html', {'students': students})
+    students = Students.objects.all()
+    template = loader.get_template('pages/student_list.html')
+    return HttpResponse(template.render({'students': students}, request))
 
 def StudentDetailView(request):
-    student = Students.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/student_detail.html', {'student': student})
+    student = Students.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/student_detail.html')
+    return HttpResponse(template.render({'student': student}, request))
 
 def StudentCreateView(request):
-    Students.create(request.POST)
+    Students.objects.create(request.POST)
     return redirect('student_list')
 
 def StudentUpdateView(request):
-    Students.update(request.POST)
+    Students.objects.update(request.POST)
     return redirect('student_list')
 
 def StudentDeleteView(request):
-    Students.delete(request.GET.get('canvas_id'))
+    Students.objects.delete(request.GET.get('canvas_id'))
     return redirect('student_list')
 
 # Course Views
 def CourseListView(request):
-    courses = Courses.get_all()
-    return render(request, 'pages/courses.html', {'courses': courses})
+    courses = Courses.objects.all()
+    template = loader.get_template('pages/courses.html')
+    return HttpResponse(template.render({'courses': courses}, request))
 
 def CourseDetailView(request, course_id):
-    course = Courses.get_by_id(int(course_id))
-    return render(request, 'pages/course_detail.html', {'course': course})
+    course = Courses.objects.get(course_id=course_id)
+    template = loader.get_template('pages/course_detail.html')
+    return HttpResponse(template.render({'course': course}, request))
 
 def CourseCreateView(request):
-    Courses.create(request.POST)
+    Courses.objects.create(request.POST)
     return redirect('course_list')
 
 def CourseUpdateView(request):
-    Courses.update(request.POST)
+    Courses.objects.update(request.POST)
     return redirect('course_list')
 
 def CourseDeleteView(request):
-    Courses.delete(request.GET.get('canvas_id'))
+    Courses.objects.delete(request.GET.get('canvas_id'))
     return redirect('course_list')
 
-# Assignment Views
 def AssignmentsListView(request, course_id):
-    course = Courses.get_by_id(course_id)
-    assignments = Assignments.get_by_course_id(course_id)
-    return render(request, 'pages/course_assignments.html', {'course': course, 'assignments': assignments})
+    course = Courses.objects.get(course_id=course_id)
+    assignments = Assignments.objects.filter(course=course)
+    template = loader.get_template('pages/course_assignments.html')
+    return HttpResponse(template.render({'course': course, 'assignments': assignments}, request))
 
 def AssignmentDetailsView(request, assignment_id):
-    assignment = Assignments.get_by_id(int(assignment_id))
-    course = Courses.get_by_id(assignment['course_id'])
-    return render(request, 'pages/assignment_details.html', {'course': course, 'assignment': assignment})
+    assignment = Assignments.objects.get(assignment_id=assignment_id)
+    course = course=assignment.course
+    template = loader.get_template('pages/assignment_details.html')
+    return HttpResponse(template.render({'course': course, 'assignment': assignment}, request))
 
 def AssignmentCreateView(request):
-    Assignments.create(request.POST)
+    Assignments.objects.create(request.POST)
     return redirect('assignment_list')
 
 def AssignmentUpdateView(request):
-    Assignments.update(request.POST)
+    Assignments.objects.update(request.POST)
     return redirect('assignment_list')
 
 def AssignmentDeleteView(request):
-    Assignments.delete(request.GET.get('canvas_id'))
+    Assignments.objects.delete(request.GET.get('canvas_id'))
     return redirect('assignment_list')
 
 # Student Assignment Views
 def StudentAssignmentListView(request):
-    student_assignments = StudentAssignments.get_all()
-    return render(request, 'pages/student_assignment_list.html', {'student_assignments': student_assignments})
+    student_assignments = StudentAssignments.objects.all()
+    template = loader.get_template('pages/student_assignment_list.html')
+    return HttpResponse(template.render({'student_assignments': student_assignments}, request))
 
 def StudentAssignmentDetailView(request):
-    student_assignment = StudentAssignments.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/student_assignment_detail.html', {'student_assignment': student_assignment})
+    student_assignment = StudentAssignments.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/student_assignment_detail.html')
+    return HttpResponse(template.render({'student_assignment': student_assignment}, request))
 
 def StudentAssignmentCreateView(request):
-    StudentAssignments.create(request.POST)
+    StudentAssignments.objects.create(request.POST)
     return redirect('student_assignment_list')
 
 def StudentAssignmentUpdateView(request):
-    StudentAssignments.update(request.POST)
+    StudentAssignments.objects.update(request.POST)
     return redirect('student_assignment_list')
 
 def StudentAssignmentDeleteView(request):
-    StudentAssignments.delete(request.GET.get('canvas_id'))
+    StudentAssignments.objects.delete(request.GET.get('canvas_id'))
     return redirect('student_assignment_list')
 
 # Quiz Views
 def QuizListView(request):
-    quizzes = Quizzes.get_all()
-    return render(request, 'pages/quiz_list.html', {'quizzes': quizzes})
+    quizzes = Quizzes.objects.all()
+    template = loader.get_template('pages/quiz_list.html')
+    return HttpResponse(template.render({'quizzes': quizzes}, request))
 
 def QuizDetailView(request):
-    quiz = Quizzes.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/quiz_detail.html', {'quiz': quiz})
+    quiz = Quizzes.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/quiz_detail.html')
+    return HttpResponse(template.render({'quiz': quiz}, request))
 
 def QuizCreateView(request):
-    Quizzes.create(request.POST)
+    Quizzes.objects.create(request.POST)
     return redirect('quiz_list')
 
 def QuizUpdateView(request):
-    Quizzes.update(request.POST)
+    Quizzes.objects.update(request.POST)
     return redirect('quiz_list')
 
 def QuizDeleteView(request):
-    Quizzes.delete(request.GET.get('canvas_id'))
+    Quizzes.objects.delete(request.GET.get('canvas_id'))
     return redirect('quiz_list')
 
 # Submission Views
 def SubmissionListView(request):
-    submissions = Submissions.get_all()
-    return render(request, 'pages/submission_list.html', {'submissions': submissions})
+    submissions = Submissions.objects.all()
+    template = loader.get_template('pages/submission_list.html')
+    return HttpResponse(template.render({'submissions': submissions}, request))
 
 def SubmissionDetailView(request):
-    submission = Submissions.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/submission_detail.html', {'submission': submission})
+    submission = Submissions.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/submission_detail.html')
+    return HttpResponse(template.render({'submission': submission}, request))
 
 def SubmissionCreateView(request):
-    Submissions.create(request.POST)
+    Submissions.objects.create(request.POST)
     return redirect('submission_list')
 
 def SubmissionUpdateView(request):
-    Submissions.update(request.POST)
+    Submissions.objects.update(request.POST)
     return redirect('submission_list')
 
 def SubmissionDeleteView(request):
-    Submissions.delete(request.GET.get('canvas_id'))
+    Submissions.objects.delete(request.GET.get('canvas_id'))
     return redirect('submission_list')
 
 # File Views
 def FileListView(request):
-    files = Files.get_all()
-    return render(request, 'pages/file_list.html', {'files': files})
+    files = Files.objects.all()
+    template = loader.get_template('pages/file_list.html')
+    return HttpResponse(template.render({'files': files}, request))
 
 def FileDetailView(request):
-    file = Files.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/file_detail.html', {'file': file})
+    file = Files.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/file_detail.html')
+    return HttpResponse(template.render({'file': file}, request))
 
 def FileUploadView(request):
-    Files.create(request.POST)
+    Files.objects.create(request.POST)
     return redirect('file_list')
 
 def FileUpdateView(request):
-    Files.update(request.POST)
+    Files.objects.update(request.POST)
     return redirect('file_list')
 
 def FileDeleteView(request):
-    Files.delete(request.GET.get('canvas_id'))
+    Files.objects.delete(request.GET.get('canvas_id'))
     return redirect('file_list')
 
 # Custom Task Views
 def CustomTaskListView(request):
-    custom_tasks = CustomTasks.get_all()
-    return render(request, 'pages/customtask_list.html', {'custom_tasks': custom_tasks})
+    custom_tasks = CustomTasks.objects.all()
+    template = loader.get_template('pages/customtask_list.html')
+    return HttpResponse(template.render({'custom_tasks': custom_tasks}, request))
 
 def CustomTaskDetailView(request):
-    custom_task = CustomTasks.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/customtask_detail.html', {'custom_task': custom_task})
+    custom_task = CustomTasks.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/customtask_detail.html')
+    return HttpResponse(template.render({'custom_task': custom_task}, request))
 
 def CustomTaskCreateView(request):
-    CustomTasks.create(request.POST)
+    CustomTasks.objects.create(request.POST)
     return redirect('customtask_list')
 
 def CustomTaskUpdateView(request):
-    CustomTasks.update(request.POST)
+    CustomTasks.objects.update(request.POST)
     return redirect('customtask_list')
 
 def CustomTaskDeleteView(request):
-    CustomTasks.delete(request.GET.get('canvas_id'))
+    CustomTasks.objects.delete(request.GET.get('canvas_id'))
     return redirect('customtask_list')
 
 # Deadline Views
 def DeadlineListView(request):
-    deadlines = Deadlines.get_all()
-    return render(request, 'pages/deadline_list.html', {'deadlines': deadlines})
+    deadlines = Deadlines.objects.all()
+    template = loader.get_template('pages/deadline_list.html')
+    return HttpResponse(template.render({'deadlines': deadlines}, request))
 
 def DeadlineDetailView(request):
-    deadline = Deadlines.get_by_id(request.GET.get('canvas_id'))
-    return render(request, 'pages/deadline_detail.html', {'deadline': deadline})
+    deadline = Deadlines.objects.get(canvas_id=request.GET.get('canvas_id'))
+    template = loader.get_template('pages/deadline_detail.html')
+    return HttpResponse(template.render({'deadline': deadline}, request))
 
 def DeadlineCreateView(request):
-    Deadlines.create(request.POST)
+    Deadlines.objects.create(request.POST)
     return redirect('deadline_list')
 
 def DeadlineUpdateView(request):
-    Deadlines.update(request.POST)
+    Deadlines.objects.update(request.POST)
     return redirect('deadline_list')
 
 def DeadlineDeleteView(request):
-    Deadlines.delete(request.GET.get('canvas_id'))
+    Deadlines.objects.delete(request.GET.get('canvas_id'))
     return redirect('deadline_list')
 
 def add_custom_task(request):
     if request.method == 'POST':
-        form = forms.CustomTaskForm(request.POST)
+        form = CustomTaskForm(request.POST)
         if form.is_valid():
             # Create a new CustomTask instance and save it to MongoDB
             new_task = CustomTasks(
@@ -230,13 +251,14 @@ def add_custom_task(request):
             new_task.save()  # Save to MongoDB
             return redirect('customtask_list')  # Redirect to the custom task list after adding
     else:
-        form = forms.CustomTaskForm()  # Create a new empty form
+        form = CustomTaskForm()  # Create a new empty form
 
-    return render(request, 'pages/customtask_form.html', {'form': form})
+    template = loader.get_template('pages/customtask_form.html')
+    return HttpResponse(template.render({'form': form}, request))
 
 def add_deadline(request):
     if request.method == 'POST':
-        form = forms.DeadlineForm(request.POST)
+        form = DeadlineForm(request.POST)
         if form.is_valid():
             new_deadline = Deadlines(
                 title=form.cleaned_data['title'],
@@ -246,9 +268,10 @@ def add_deadline(request):
             new_deadline.save()
             return redirect('deadline_list')
     else:
-        form = forms.DeadlineForm()
+        form = DeadlineForm()
 
-    return render(request, 'pages/deadline_form.html', {'form': form})
+    template = loader.get_template('pages/deadline_form.html')
+    return HttpResponse(template.render({'form': form}, request))
 
 def upload_file(request):
     if request.method == 'POST':

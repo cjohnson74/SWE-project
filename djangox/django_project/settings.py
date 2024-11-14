@@ -65,6 +65,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
+    "fileupload", # Django Fileupload application
 ]
 
 ROOT_URLCONF = 'django_project.urls'
@@ -95,30 +96,6 @@ DATABASES = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
-}
-
-# MongoDB
-# DATABASE = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': os.getenv("DB_NAME"),
-#         'CLIENT': {
-#             'host': os.getenv("DB_HOST"),
-#             'port': int(os.getenv("DB_PORT")),
-#             'username': os.getenv("DB_USER"),
-#             'password': os.getenv("DB_PASSWORD"),
-#             'authSource': os.getenv("DB_AUTH_SOURCE"),
-#             'authMechanism': 'SCRAM-SHA-1',
-#         },
-#     }
-# }
-
-# MongoDB
-MONGODB_SETTINGS = {
-    'host': os.getenv("DB_HOST"),
-    'database': os.getenv("DB_NAME"),
-    'username': os.getenv("DB_USER"),
-    'password': os.getenv("DB_PASSWORD"),
 }
 
 # media files
