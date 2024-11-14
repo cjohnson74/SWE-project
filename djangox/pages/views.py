@@ -5,8 +5,8 @@ from django.http import HttpResponse
 from django.template import loader
 
 def HomePageView(request):
-    template = loader.get_template('pages/home.html')
-    return HttpResponse(template.render({}, request))
+    courses = Courses.get_all()
+    return render(request, 'pages/home.html', {'courses': courses})
 
 def AboutPageView(request):
     template = loader.get_template('pages/about.html')
@@ -74,7 +74,9 @@ def CourseDeleteView(request):
     return redirect('course_list')
 
 def AssignmentsListView(request, course_id):
+    print(f"Requested course_id: {course_id}")
     course = Courses.objects.get(course_id=course_id)
+    print(f"Retrieved course: {course}")
     assignments = Assignments.objects.filter(course=course)
     template = loader.get_template('pages/course_assignments.html')
     return HttpResponse(template.render({'course': course, 'assignments': assignments}, request))
@@ -96,6 +98,9 @@ def AssignmentUpdateView(request):
 def AssignmentDeleteView(request):
     Assignments.objects.delete(request.GET.get('canvas_id'))
     return redirect('assignment_list')
+
+def AssignmentTasksView(request, assignment_id):
+    return render(request, 'pages/assignment_tasks.html', {'assignment_id': assignment_id})
 
 # Student Assignment Views
 def StudentAssignmentListView(request):
