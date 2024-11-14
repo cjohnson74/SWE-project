@@ -3,6 +3,7 @@ from .models import Students, Courses, Assignments, Quizzes, StudentAssignments,
 from .forms import fileForm
 from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
+from .claude_service import get_assignment_breakdown
 from django.http import HttpResponse
 from django.template import loader
 
@@ -241,6 +242,21 @@ def DeadlineUpdateView(request):
 def DeadlineDeleteView(request):
     Deadlines.objects.delete(request.GET.get('canvas_id'))
     return redirect('deadline_list')
+
+def AssignmentBreakdownView(request, assignment_id):
+    breakdown = None
+    # student_id = request.user.id  # Uncomment if you need to use student ID
+
+    if request.method == 'POST':
+        try:
+            breakdown = get_assignment_breakdown(assignment_id)
+            print("Breakdown:", JsonResponse(breakdown))
+            return JsonResponse(breakdown)
+        except Exception as e:
+            print("Error fetching breakdown:", e)
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return render(request, 'pages/assignment_breakdown.html', {'assignment_id': assignment_id, 'breakdown': breakdown})
 
 def add_custom_task(request):
     if request.method == 'POST':

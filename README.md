@@ -60,6 +60,12 @@ DEBUG=True
 # Canvas API
 CANVAS_ACCESS_TOKEN='<canvas-access-token>'
 ENROLLMENT_TERM_ID=10160000000002195
+
+# Django
+DATABASE_URL='sqlite:///db.sqlite3'
+
+# Claude API
+CLAUDE_API_KEY='<claude-api-key>'
 ```
 
 ### Getting Canvas Access Token
