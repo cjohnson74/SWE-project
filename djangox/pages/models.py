@@ -1,5 +1,17 @@
+from pymongo import MongoClient
 from django.conf import settings
 from django.db import models
+
+class fileModel(models.Model):
+    file = models.FileField(upload_to='uploads/')
+    # or for images specifically
+    # image = models.ImageField(upload_to='images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    def delete(self, *args, **kwargs):
+        # Delete the file from the file system
+        self.file.delete(save=False)
+        # Delete the model instance
+        super().delete(*args, **kwargs)
 
 class Students(models.Model):
     canvas_id = models.CharField(max_length=255, unique=True)
