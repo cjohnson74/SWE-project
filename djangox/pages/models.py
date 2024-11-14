@@ -6,8 +6,6 @@ class MongoDBClient:
         self.client = MongoClient(settings.MONGODB_SETTINGS['host'])
         self.db = self.client[settings.MONGODB_SETTINGS['database']]
 
-# Create your models here.
-
 class Students():
     collection_name = 'Students'
 
@@ -452,8 +450,19 @@ class Deadlines():
         client = MongoDBClient()
         deadlines_collection = client.db[Deadlines.collection_name]
         deadlines_collection.update_one({'canvas_id': canvas_id}, {'$set': updates})
-
+        
 from django.db import models
+
+class fileModel(models.Model):
+    file = models.FileField(upload_to='uploads/')
+    # or for images specifically
+    # image = models.ImageField(upload_to='images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    def delete(self, *args, **kwargs):
+        # Delete the file from the file system
+        self.file.delete(save=False)
+        # Delete the model instance
+        super().delete(*args, **kwargs)
 
 class Students(models.Model):
     canvas_id = models.CharField(max_length=255, unique=True)

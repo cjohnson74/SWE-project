@@ -1,13 +1,15 @@
 from .forms import CustomTaskForm, DeadlineForm
 from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
+from .forms import fileForm
+from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
 from .claude_service import get_assignment_breakdown
 from django.http import HttpResponse
 from django.template import loader
 
 def HomePageView(request):
-    template = loader.get_template('pages/home.html')
-    return HttpResponse(template.render({}, request))
+    courses = Courses.get_all()
+    return render(request, 'pages/home.html', {'courses': courses})
 
 def AboutPageView(request):
     template = loader.get_template('pages/about.html')
@@ -75,7 +77,9 @@ def CourseDeleteView(request):
     return redirect('course_list')
 
 def AssignmentsListView(request, course_id):
+    print(f"Requested course_id: {course_id}")
     course = Courses.objects.get(course_id=course_id)
+    print(f"Retrieved course: {course}")
     assignments = Assignments.objects.filter(course=course)
     template = loader.get_template('pages/course_assignments.html')
     return HttpResponse(template.render({'course': course, 'assignments': assignments}, request))
@@ -97,6 +101,9 @@ def AssignmentUpdateView(request):
 def AssignmentDeleteView(request):
     Assignments.objects.delete(request.GET.get('canvas_id'))
     return redirect('assignment_list')
+
+def AssignmentTasksView(request, assignment_id):
+    return render(request, 'pages/assignment_tasks.html', {'assignment_id': assignment_id})
 
 # Student Assignment Views
 def StudentAssignmentListView(request):
@@ -286,6 +293,33 @@ def add_deadline(request):
 
     template = loader.get_template('pages/deadline_form.html')
     return HttpResponse(template.render({'form': form}, request))
+
+def upload_file(request):
+    if request.method == 'POST':
+        form = fileForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()  # Save the uploaded file
+            form = fileForm()  # Reset the form after a successful upload
+            return render(request, 'pages/upload.html', {'form': form, 'success': True})
+    else:
+        form = fileForm()
+
+    return render(request, 'pages/upload.html', {'form': form})
+
+def delete_file(request, file_id):
+    file_instance = fileModel.objects.get(id=file_id)
+    
+    # Delete the file from the file system
+    file_instance.file.delete()
+    
+    # Delete the database record
+    file_instance.delete()
+    
+    return redirect('file_list')
+
+def file_list(request):
+    files = fileModel.objects.all()
+    return render(request, 'pages/file_list.html', {'files': files})
 
 # def course_detail(request, course_id):
 #     """View to display details of a specific course."""
