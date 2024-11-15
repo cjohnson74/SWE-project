@@ -68,7 +68,7 @@
     <ul>
         {% for assignment in assignments %}
             <!-- Entire row is wrapped in an <a> tag to make it clickable -->
-            <a href="{% url 'assignment_tasks' assignment.assignment_id %}" class="clickable-row">
+            <a href="{% url 'assignment_details' assignment.assignment_id %}" class="clickable-row">
                 <li>
                     <strong>{{ assignment.name }}</strong>
                 </li>

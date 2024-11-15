@@ -4,11 +4,11 @@ from .forms import fileForm
 from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
 from .claude_service import get_assignment_breakdown
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template import loader
 
 def HomePageView(request):
-    courses = Courses.get_all()
+    courses = Courses.objects.all()
     return render(request, 'pages/home.html', {'courses': courses})
 
 def AboutPageView(request):
@@ -81,7 +81,7 @@ def AssignmentsListView(request, course_id):
     course = Courses.objects.get(course_id=course_id)
     print(f"Retrieved course: {course}")
     assignments = Assignments.objects.filter(course=course)
-    template = loader.get_template('pages/course_assignments.html')
+    template = loader.get_template('pages/assignments.html')
     return HttpResponse(template.render({'course': course, 'assignments': assignments}, request))
 
 def AssignmentDetailsView(request, assignment_id):
