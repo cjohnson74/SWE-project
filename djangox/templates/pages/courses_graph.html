@@ -11,8 +11,50 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <style>
+        /* Responsive container styles */
+        .graph-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%; /* Aspect ratio 4:3 */
+            min-height: 400px;
+        }
+
+        #graph {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Sidebar styles */
+        .instructions, .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .instructions, .legend {
+                position: static !important;
+                margin-bottom: 20px;
+            }
+            
+            .graph-container {
+                padding-bottom: 100%; /* More square aspect ratio on mobile */
+                min-height: 300px;
+            }
+        }
+
+        /* Node styles */
         .bubble {
-            fill: #4a90e2;  /* Calming blue color */
+            fill: #4a90e2;
             stroke: #ffffff;
             stroke-width: 3px;
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
@@ -23,7 +65,7 @@
         }
         
         .assignment {
-            fill: #f6b93b;  /* Warm yellow color */
+            fill: #f6b93b;
             stroke: #ffffff;
             stroke-width: 2px;
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
@@ -34,7 +76,7 @@
         }
         
         .task {
-            fill: #78e08f;  /* Soft green color */
+            fill: #78e08f;
             stroke: #ffffff;
             stroke-width: 2px;
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
@@ -50,35 +92,42 @@
             stroke-dasharray: 5,5;  /* Creates a dashed line */
         }
         
-        /* Custom tooltip styling */
+        /* General tooltip styling */
         .custom-tooltip {
-            background-color: #ffffff;
-            border: 2px solid #dfe6e9;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
-            line-height: 1.4;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 300px;
-            color: #2d3436;
+            background-color: #ffffff !important; /* Solid white background */
+            border: 2px solid #dfe6e9 !important; /* Light gray border */
+            border-radius: 8px; /* Rounded corners */
+            padding: 8px 12px; /* Reduced padding for less height */
+            font-size: 14px; /* Font size */
+            line-height: 1.4; /* Line height for readability */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            max-width: 300px; /* Maximum width to prevent overflow */
+            color: #2d3436; /* Text color */
+            z-index: 1000; /* Ensure tooltip appears above other elements */
         }
         
+        /* Title styling */
         .tooltip-title {
-            font-weight: bold;
-            color: #2d3436;
-            margin-bottom: 8px;
-            font-size: 16px;
+            font-size: 16px; /* Larger font for title */
+            font-weight: bold; /* Bold title */
+            margin-bottom: 4px; /* Reduced space below title */
+            padding-bottom: 2px; /* Reduced space below title */
+            border-bottom: 1px solid #dfe6e9; /* Bottom border for separation */
         }
         
+        /* Info line styling */
         .tooltip-info {
-            margin: 4px 0;
-            display: flex;
-            align-items: center;
+            margin: 4px 0; /* Space between info lines */
+            display: flex; /* Flexbox for alignment */
+            align-items: center; /* Center items vertically */
+            gap: 8px; /* Space between icon and text */
         }
         
+        /* Icon styling */
         .tooltip-icon {
-            margin-right: 8px;
-            color: #636e72;
+            font-size: 16px; /* Icon size */
+            min-width: 20px; /* Minimum width for alignment */
+            text-align: center; /* Center icon */
         }
         
         /* Legend styling */
@@ -97,7 +146,7 @@
             align-items: center;
             margin: 8px 0;
         }
-        
+
         .legend-color {
             width: 20px;
             height: 20px;
@@ -164,13 +213,102 @@
             font-weight: bold;
             font-size: 14px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            z-index: 10; /* Ensure labels are above other elements */
+        }
+        
+        .next-assignment {
+            border-left: 4px solid #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .progress {
+            height: 20px;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+        }
+        
+        .priority-assignment {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .priority-urgent {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left-color: #e74c3c;
+        }
+
+        .priority-upcoming {
+            background-color: rgba(246, 185, 59, 0.1);
+            border-left-color: #f6b93b;
+        }
+
+        /* Arrow styling */
+        .tooltip .arrow::before {
+            border-top-color: #dfe6e9 !important;
+            border-bottom-color: #dfe6e9 !important;
+            border-left-color: #dfe6e9 !important;
+            border-right-color: #dfe6e9 !important;
         }
     </style>
 </head>
 
-<div class="container mt-4">
-    <h1 class="text-center mb-4">Course Graph</h1>
-    <svg id="graph" width="100%" height="600"></svg>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Left column for instructions -->
+        <div class="col-md-3 col-lg-2">
+            <div class="instructions sticky-top" style="top: 80px;">
+                <h4>Instructions</h4>
+                <ul class="list-unstyled">
+                    <li>🔵 Click on a course to see assignments</li>
+                    <li>🟡 Click on an assignment to see tasks</li>
+                    <li>✋ Drag nodes to rearrange</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Center column for graph -->
+        <div class="col-md-6 col-lg-8">
+            <h1 class="text-center mb-4">Course Graph</h1>
+            <div class="graph-container">
+                <svg id="graph"></svg>
+            </div>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">📋 Next Up</h3>
+                    <div id="nextAssignments">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right column for legend -->
+        <div class="col-md-3 col-lg-2">
+            <div class="legend sticky-top" style="top: 80px;">
+                <h4>Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4a90e2;"></div>
+                    <span>Course</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f6b93b;"></div>
+                    <span>Assignment</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #78e08f;"></div>
+                    <span>Task</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -178,11 +316,12 @@
         // Pass the courses data from Django view
         console.log("HERE");
         const courses = {{ courses|safe }};
-        console.log(courses);  // Log the courses data to check its structure
+        console.log(courses);
+        
+        // Update next assignments panel
+        updateNextAssignments(courses);
 
-        // After the courses data is loaded
-        console.log("Courses Data:", courses);
-
+        // Your existing code for course visualization...
         courses.forEach(course => {
             console.log("\nCourse:", {
                 name: course.name,
@@ -241,6 +380,7 @@
         }
 
         function dragged(event, d) {
+            // Update the position of the course node
             d.x = event.x;
             d.y = event.y;
 
@@ -248,6 +388,15 @@
             d3.select(this)
                 .attr("cx", d.x)
                 .attr("cy", d.y);
+
+            // Update label position if this is a course
+            if (d.label) {
+                // Calculate the new position for the label
+                const labelOffsetX = 259; // Adjust this value if needed
+                const labelOffsetY =152; // Adjust this value if needed
+                d.label.style.left = `${d.x + labelOffsetX}px`;
+                d.label.style.top = `${d.y + labelOffsetY}px`;
+            }
 
             if (d3.select(this).classed("bubble")) {
                 // If this is a course being dragged
@@ -359,14 +508,20 @@
             label.textContent = d.course_code;
             document.body.appendChild(label);
 
-            // Update label position when node moves
+            // Store reference to the label
             d.label = label;
+
+            // Set initial position
+            label.style.left = `${d.x}px`;
+            label.style.top = `${d.y}px`;
         });
 
-        // Initialize Bootstrap tooltips
+        // Initialize tooltips with the correct options
         $('[data-toggle="tooltip"]').tooltip({
-            html: true, // Allow HTML content in tooltips
-            trigger: 'hover'
+            html: true,
+            trigger: 'hover',
+            container: 'body',
+            template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
         });
 
         // Modify the simulation
@@ -416,27 +571,38 @@
                 .data(assignments)
                 .enter()
                 .append("circle")
-                .attr("class", "assignment")
-                .attr("data-id", d => d.id)
                 .attr("class", d => {
                     const now = new Date();
                     const dueDate = new Date(d.due_at);
                     if (dueDate < now) return "assignment overdue";
                     return "assignment incomplete";
                 })
-                .attr("data-id", d => d.name)
+                .attr("data-id", d => d.id)
                 .attr("r", 20)
                 .attr("cx", d => position[0] + 100)
                 .attr("cy", d => position[1])
                 .attr("data-toggle", "tooltip")
-                .attr("title", d => `
-                    <div class="custom-tooltip">
-                        <div class="tooltip-title">${d.name}</div>
-                        <div class="tooltip-info">
-                            <span class="tooltip-icon">📅</span> Due: ${new Date(d.due_at).toLocaleDateString()}
-                        </div>
-                    </div>
-                `)
+                .attr("title", d => {
+                    const tooltipContent = `
+                        <div class="custom-tooltip">
+                            <div class="tooltip-title">${d.name}</div>
+                            <div class="tooltip-info">
+                                <span class="tooltip-icon">📅</span> Due: ${new Date(d.due_at).toLocaleDateString()}
+                            </div>
+                            <div class="tooltip-info">
+                                <span class="tooltip-icon">⭐</span> Points: ${d.points_possible || 'N/A'}
+                            </div>
+                            <div class="tooltip-info">
+                                <span class="tooltip-icon">📝</span> ${d.description || 'No description available'}
+                            </div>
+                            <div class="tooltip-info">
+                                <span class="tooltip-icon">${new Date(d.due_at) < new Date() ? '⚠️' : '✅'}</span> 
+                                Status: ${new Date(d.due_at) < new Date() ? 'Overdue' : 'Upcoming'}
+                            </div>
+                        </div>`;
+                    console.log('Assignment Tooltip Content:', tooltipContent);
+                    return tooltipContent;
+                })
                 .on("click", function(event, d) {
                     // Clear existing tasks
                     d3.selectAll(".task").remove();
@@ -444,14 +610,11 @@
                     // Clear ALL task-related links
                     d3.selectAll(".link")
                         .filter(l => {
-                            // Remove links where:
-                            // - either end is a task
-                            // - or the link starts from any assignment
                             return l.source && (
                                 l.source.constructor.name === 'Task' || 
                                 l.source.task_number !== undefined ||
                                 (l.target && l.target.task_number !== undefined) ||
-                                l.source.breakdowns  // This identifies assignment sources
+                                l.source.breakdowns
                             );
                         })
                         .remove();
@@ -482,14 +645,20 @@
                 .attr("x2", d => position[0] + 100)
                 .attr("y2", position[1]);
 
-            // Update simulation with gentler forces
+            // Update simulation with assignments and tasks
             simulation
-                .nodes([...courses, ...assignments])
+                .nodes([...courses, ...assignments]) // Include assignments in the simulation
                 .force("link", d3.forceLink().links(links)
                     .distance(80)  // Shorter target distance
                     .strength(0.2)) // Weaker link force
                 .alpha(0.3) // Lower alpha for gentler start
                 .restart();
+
+            // Initialize tooltips
+            $('[data-toggle="tooltip"]').tooltip({
+                html: true,
+                trigger: 'hover'
+            });
         }
 
         // Update task creation to handle the data structure
@@ -596,10 +765,6 @@
                 .attr("cx", d => d.x)
                 .attr("cy", d => d.y);
             
-            courseGroups.selectAll("text")
-                .attr("x", d => d.x)
-                .attr("y", d => d.y);
-
             // Update assignment positions
             svg.selectAll(".assignment")
                 .attr("cx", d => d.x)
@@ -609,68 +774,88 @@
             courses.forEach(d => {
                 if (d.label) {
                     const svgRect = svg.node().getBoundingClientRect();
-                    d.label.style.left = (svgRect.left + d.x) + 'px';
-                    d.label.style.top = (svgRect.top + d.y) + 'px';
+                    const labelX = svgRect.left + d.x; // X position relative to the SVG
+                    const labelY = svgRect.top + d.y;  // Y position relative to the SVG
+
+                    // Adjust label position based on scroll
+                    d.label.style.left = `${labelX + window.scrollX}px`;
+                    d.label.style.top = `${labelY + window.scrollY}px`; // Add window scroll position
                 }
             });
         }
 
-        // Start the simulation
-        simulation.alpha(1).restart();
-
-        // svg.append("rect")
-        //     .attr("width", width || 0)
-        //     .attr("height", height || 0)
-            // .attr("fill", "lightgrey");
+        $('[data-toggle="tooltip"]').tooltip({
+            html: true,
+            trigger: 'hover',
+            container: 'body',
+            template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+        });
     });
+
+    // Add the new updateNextAssignments function
+    function updateNextAssignments(courses) {
+        const now = new Date();
+        let allAssignments = [];
+        
+        // Collect all assignments with their course info
+        courses.forEach(course => {
+            if (course.assignments) {
+                course.assignments.forEach(assignment => {
+                    if (assignment.due_at) {
+                        allAssignments.push({
+                            ...assignment,
+                            courseName: course.name,
+                            courseCode: course.course_code
+                        });
+                    }
+                });
+            }
+        });
+        
+        // Sort assignments by due date
+        allAssignments.sort((a, b) => new Date(a.due_at) - new Date(b.due_at));
+        
+        // Filter to only show upcoming assignments (not past due)
+        const upcomingAssignments = allAssignments.filter(a => new Date(a.due_at) > now);
+        
+        // Take the next 3 assignments
+        const nextAssignments = upcomingAssignments.slice(0, 3);
+        
+        // Update the display
+        const container = document.getElementById('nextAssignments');
+        container.innerHTML = nextAssignments.length ? '' : '<p>No upcoming assignments!</p>';
+        
+        nextAssignments.forEach((assignment, index) => {
+            const dueDate = new Date(assignment.due_at);
+            const timeRemaining = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+            
+            const div = document.createElement('div');
+            div.className = `priority-assignment ${timeRemaining <= 3 ? 'priority-urgent' : 'priority-upcoming'}`;
+            
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="course-tag">${assignment.courseCode}</span>
+                        <strong>${assignment.name}</strong>
+                    </div>
+                    <div class="time-remaining">
+                        ${timeRemaining} day${timeRemaining !== 1 ? 's' : ''} remaining
+                    </div>
+                </div>
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar ${timeRemaining <= 3 ? 'bg-danger' : 'bg-warning'}" 
+                         role="progressbar" 
+                         style="width: ${100 - (timeRemaining / 14) * 100}%">
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(div);
+        });
+    }
+
+    // Call on load and window resize
+    window.addEventListener('load', updateSvgDimensions);
+    window.addEventListener('resize', updateSvgDimensions);
 </script>
-
-<!-- Add legend and instructions -->
-<div class="legend">
-    <h4>Types</h4>
-    <div class="legend-item">
-        <div class="legend-color" style="background: #4a90e2;"></div>
-        <span>Courses</span>
-    </div>
-    <div class="legend-section">
-        <h5>Assignment Status</h5>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #27ae60;"></div>
-            <span>Completed</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #f6b93b;"></div>
-            <span>Incomplete</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #e74c3c;"></div>
-            <span>Overdue</span>
-        </div>
-    </div>
-    <div class="legend-section">
-        <h5>Task Status</h5>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #2ecc71;"></div>
-            <span>Completed</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #78e08f;"></div>
-            <span>Incomplete</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ff7675;"></div>
-            <span>Overdue</span>
-        </div>
-    </div>
-</div>
-
-<div class="instructions">
-    <h4>How to Use</h4>
-    <ul>
-        <li>Click on a course (blue) to see its assignments</li>
-        <li>Click on an assignment (yellow) to see its tasks</li>
-        <li>Drag any item to rearrange the view</li>
-        <li>Hover over items for more information</li>
-    </ul>
-</div>
 {% endblock %}

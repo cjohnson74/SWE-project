@@ -7,6 +7,8 @@ from .claude_service import get_assignment_breakdown
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
 import json
+from django.utils import timezone
+
 def HomePageView(request):
     courses = Courses.objects.all()
     return render(request, 'pages/home.html', {'courses': courses})
@@ -361,9 +363,24 @@ def file_list(request):
 
 def CoursesGraphView(request):
     courses = Courses.objects.prefetch_related(
-        'assignments__assignment_breakdown__tasks',  # Prefetch AssignmentBreakdown for each Assignment
-        'assignments__assignment_breakdown__tasks__youtube_resources'  # Prefetch YouTubeResources for each AssignmentBreakdownTask
+        'assignments__assignment_breakdown__tasks'
     ).all()
+
+    # Get current datetime for comparison
+    current_time = timezone.now()
+    
+    # Find the next assignment due
+    next_assignment = None
+    earliest_due_date = None
+    
+    for course in courses:
+        for assignment in course.assignments.all():
+            if assignment.due_at:  # Check if due date exists
+                # Only consider assignments that aren't completed and aren't overdue
+                if assignment.due_at > current_time:
+                    if earliest_due_date is None or assignment.due_at < earliest_due_date:
+                        earliest_due_date = assignment.due_at
+                        next_assignment = assignment
 
     courses_data = []
     for course in courses:
@@ -371,7 +388,8 @@ def CoursesGraphView(request):
             'course_id': course.course_id,
             'name': course.name,
             'course_code': course.course_code,
-            'assignments': []
+            'assignments': [],
+            'next_assignment': 'none'  # Add this field
         }
 
         for assignment in course.assignments.all():
@@ -379,9 +397,14 @@ def CoursesGraphView(request):
                 due_at = ""
             else:
                 due_at = assignment.due_at.isoformat()
+                
+            # Calculate if this is the next assignment due
+            is_next = 'true' if (next_assignment and assignment.id == next_assignment.id) else 'false'
+                
             assignment_info = {
                 'name': assignment.name,
                 'due_at': due_at,
+                'is_next': is_next,  # Add this field
                 'breakdowns': []
             }
 
@@ -416,4 +439,11 @@ def CoursesGraphView(request):
 
         courses_data.append(course_info)
 
-    return render(request, 'pages/courses_graph.html', {'courses': courses_data})
+    return render(request, 'pages/courses_graph.html', {
+        'courses': courses_data,
+        'next_assignment': {
+            'name': next_assignment.name,
+            'course': next_assignment.course.name,
+            'due_at': next_assignment.due_at.isoformat()
+        } if next_assignment else None
+    })
