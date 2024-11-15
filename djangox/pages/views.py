@@ -1,12 +1,12 @@
-from .forms import CustomTaskForm, DeadlineForm
-from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, CustomTasks, Deadlines
+from .forms import DeadlineForm
+from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, Deadlines, AssignmentBreakdown, YouTubeResource, AssignmentBreakdownTask
 from .forms import fileForm
 from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
 from .claude_service import get_assignment_breakdown
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
-
+import json
 def HomePageView(request):
     courses = Courses.objects.all()
     return render(request, 'pages/home.html', {'courses': courses})
@@ -197,29 +197,6 @@ def FileDeleteView(request):
     Files.objects.delete(request.GET.get('canvas_id'))
     return redirect('file_list')
 
-# Custom Task Views
-def CustomTaskListView(request):
-    custom_tasks = CustomTasks.objects.all()
-    template = loader.get_template('pages/customtask_list.html')
-    return HttpResponse(template.render({'custom_tasks': custom_tasks}, request))
-
-def CustomTaskDetailView(request):
-    custom_task = CustomTasks.objects.get(canvas_id=request.GET.get('canvas_id'))
-    template = loader.get_template('pages/customtask_detail.html')
-    return HttpResponse(template.render({'custom_task': custom_task}, request))
-
-def CustomTaskCreateView(request):
-    CustomTasks.objects.create(request.POST)
-    return redirect('customtask_list')
-
-def CustomTaskUpdateView(request):
-    CustomTasks.objects.update(request.POST)
-    return redirect('customtask_list')
-
-def CustomTaskDeleteView(request):
-    CustomTasks.objects.delete(request.GET.get('canvas_id'))
-    return redirect('customtask_list')
-
 # Deadline Views
 def DeadlineListView(request):
     deadlines = Deadlines.objects.all()
@@ -244,38 +221,99 @@ def DeadlineDeleteView(request):
     return redirect('deadline_list')
 
 def AssignmentBreakdownView(request, assignment_id):
-    breakdown = None
-    # student_id = request.user.id  # Uncomment if you need to use student ID
+    assignment = get_object_or_404(Assignments, assignment_id=assignment_id)
+    existing_breakdown = None
+    
+    # Check for existing breakdown
+    try:
+        existing_breakdown = AssignmentBreakdown.objects.get(assignment=assignment)
+        if existing_breakdown:
+            # Format existing breakdown data
+            breakdown = {
+                'total_estimated_time': existing_breakdown.total_estimated_time,
+                'work_distribution': existing_breakdown.work_distribution,
+                'breaks_and_buffer': existing_breakdown.breaks_and_buffer,
+                'assignment_breakdown': []
+            }
+            
+            # Add tasks to the breakdown
+            for task in existing_breakdown.tasks.all():
+                task_data = {
+                    'task_number': task.task_number,
+                    'description': task.description,
+                    'estimated_time': task.estimated_time,
+                    'due_date': task.due_date.isoformat(),
+                    'completed': task.completed,
+                    'tips': task.tips,
+                    'priority': task.priority,
+                    'distraction_mitigation': task.distraction_mitigation,
+                    'focus_techniques': task.focus_techniques,
+                    'reward': task.reward,
+                    'youtube_resources': [
+                        {
+                            'title': resource.title,
+                            'link': resource.link
+                        } for resource in task.youtube_resources.all()
+                    ]
+                }
+                breakdown['assignment_breakdown'].append(task_data)
+    except AssignmentBreakdown.DoesNotExist:
+        breakdown = None
 
     if request.method == 'POST':
         try:
+            # Fetch the breakdown from the Claude API
             breakdown = get_assignment_breakdown(assignment_id)
-            print("Breakdown:", JsonResponse(breakdown))
+            print("Breakdown:", breakdown)
+
+            # Get the assignment object
+            assignment = get_object_or_404(Assignments, assignment_id=assignment_id)
+
+            # Delete existing breakdowns for this assignment
+            AssignmentBreakdown.objects.filter(assignment=assignment).delete()
+
+            # Create a new breakdown
+            assignment_breakdown = AssignmentBreakdown.objects.create(
+                assignment=assignment,
+                total_estimated_time=breakdown['total_estimated_time'],
+                work_distribution=breakdown['work_distribution'],
+                breaks_and_buffer=breakdown['breaks_and_buffer']
+            )
+
+            # Save tasks and YouTube resources
+            for task_data in breakdown['assignment_breakdown']:
+                task = AssignmentBreakdownTask.objects.create(
+                    breakdown=assignment_breakdown,
+                    task_number=task_data['task_number'],
+                    description=task_data['description'],
+                    estimated_time=task_data['estimated_time'],
+                    due_date=task_data['due_date'],
+                    completed=False,
+                    tips=task_data.get('tips', ''),
+                    priority=task_data['priority'],
+                    distraction_mitigation=task_data.get('distraction_mitigation', ''),
+                    focus_techniques=task_data.get('focus_techniques', ''),
+                    reward=task_data.get('reward', '')
+                )
+
+                # Save YouTube resources for the task
+                for resource in task_data.get('youtube_resources', []):
+                    YouTubeResource.objects.create(
+                        task=task,
+                        title=resource['title'],
+                        link=resource['link']
+                    )
+
             return JsonResponse(breakdown)
         except Exception as e:
             print("Error fetching breakdown:", e)
             return JsonResponse({'error': str(e)}, status=400)
 
-    return render(request, 'pages/assignment_breakdown.html', {'assignment_id': assignment_id, 'breakdown': breakdown})
-
-def add_custom_task(request):
-    if request.method == 'POST':
-        form = CustomTaskForm(request.POST)
-        if form.is_valid():
-            # Create a new CustomTask instance and save it to MongoDB
-            new_task = CustomTasks(
-                name=form.cleaned_data['name'],
-                description=form.cleaned_data['description'],
-                due_date=form.cleaned_data['due_date'],
-                complete=form.cleaned_data.get('complete', False)
-            )
-            new_task.save()  # Save to MongoDB
-            return redirect('customtask_list')  # Redirect to the custom task list after adding
-    else:
-        form = CustomTaskForm()  # Create a new empty form
-
-    template = loader.get_template('pages/customtask_form.html')
-    return HttpResponse(template.render({'form': form}, request))
+    return render(request, 'pages/assignment_breakdown.html', {
+        'assignment_id': assignment_id,
+        'breakdown': breakdown,
+        'has_existing_breakdown': breakdown is not None
+    })
 
 def add_deadline(request):
     if request.method == 'POST':
@@ -321,7 +359,61 @@ def file_list(request):
     files = fileModel.objects.all()
     return render(request, 'pages/file_list.html', {'files': files})
 
-# def course_detail(request, course_id):
-#     """View to display details of a specific course."""
-#     course = get_object_or_404(Courses.get_all(), cou=course_id)  # Fetch the course by ID
-#     return render(request, 'pages/course_detail.html', {'course': course})
+def CoursesGraphView(request):
+    courses = Courses.objects.prefetch_related(
+        'assignments__assignment_breakdown__tasks',  # Prefetch AssignmentBreakdown for each Assignment
+        'assignments__assignment_breakdown__tasks__youtube_resources'  # Prefetch YouTubeResources for each AssignmentBreakdownTask
+    ).all()
+
+    courses_data = []
+    for course in courses:
+        course_info = {
+            'course_id': course.course_id,
+            'name': course.name,
+            'course_code': course.course_code,
+            'assignments': []
+        }
+
+        for assignment in course.assignments.all():
+            if assignment.due_at is None:
+                due_at = ""
+            else:
+                due_at = assignment.due_at.isoformat()
+            assignment_info = {
+                'name': assignment.name,
+                'due_at': due_at,
+                'breakdowns': []
+            }
+
+            for breakdown in assignment.assignment_breakdown.all():
+                breakdown_info = {
+                    'total_estimated_time': breakdown.total_estimated_time,
+                    'work_distribution': breakdown.work_distribution,
+                    'breaks_and_buffer': breakdown.breaks_and_buffer,
+                    'tasks': []
+                }
+
+                for task in breakdown.tasks.all():
+                    task_info = {
+                        'task_number': task.task_number,
+                        'description': task.description,
+                        'estimated_time': task.estimated_time,
+                        'due_date': task.due_date.isoformat(),
+                        'youtube_resources': []
+                    }
+
+                    for resource in task.youtube_resources.all():
+                        task_info['youtube_resources'].append({
+                            'title': resource.title,
+                            'link': resource.link
+                        })
+
+                    breakdown_info['tasks'].append(task_info)
+
+                assignment_info['breakdowns'].append(breakdown_info)
+
+            course_info['assignments'].append(assignment_info)
+
+        courses_data.append(course_info)
+
+    return render(request, 'pages/courses_graph.html', {'courses': courses_data})

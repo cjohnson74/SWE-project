@@ -47,20 +47,47 @@ class Assignments(models.Model):
     def __str__(self):
         return self.name
 
-class CustomTasks(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    due_date = models.DateTimeField()
-    complete = models.BooleanField()
+class AssignmentBreakdown(models.Model):
+    assignment = models.ForeignKey(Assignments, on_delete=models.CASCADE, related_name='assignment_breakdown')
+    total_estimated_time = models.CharField(max_length=255)
+    work_distribution = models.TextField()
+    breaks_and_buffer = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
-    
+        return f"{self.assignment.name} - Breakdown"
+
+class AssignmentBreakdownTask(models.Model):
+    breakdown = models.ForeignKey(AssignmentBreakdown, on_delete=models.CASCADE, related_name='tasks')
+    task_number = models.IntegerField()
+    description = models.TextField()
+    estimated_time = models.CharField(max_length=255)
+    due_date = models.DateTimeField()
+    completed = models.BooleanField(default=False)
+    tips = models.TextField(blank=True, null=True)
+    priority = models.CharField(max_length=50)
+    distraction_mitigation = models.TextField(blank=True, null=True)
+    focus_techniques = models.TextField(blank=True, null=True)
+    reward = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.breakdown.assignment.name} - Task {self.task_number}"
+
+class YouTubeResource(models.Model):
+    task = models.ForeignKey(AssignmentBreakdownTask, on_delete=models.CASCADE, related_name='youtube_resources')
+    title = models.CharField(max_length=255)
+    link = models.URLField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.task.breakdown.assignment.name} - {self.title}"
+
 class StudentAssignments(models.Model):
     student = models.ForeignKey(Students, on_delete=models.CASCADE, related_name='student_assignments')
     assignment = models.ForeignKey(Assignments, on_delete=models.CASCADE, related_name='student_assignments')
     completed = models.BooleanField()
-    custom_tasks = models.ManyToManyField(CustomTasks, related_name='student_assignments')
+    breakdown = models.ManyToManyField(AssignmentBreakdown, related_name='student_assignments')
 
     def __str__(self):
         return f"{self.student.name} - {self.assignment.name}"

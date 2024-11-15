@@ -1,11 +1,6 @@
 # djangox/pages/forms.py
 from django import forms
-from .models import CustomTasks, Deadlines, fileModel
-
-class CustomTaskForm(forms.ModelForm):
-    class Meta:
-        model = CustomTasks
-        fields = ['name', 'description', 'due_date', 'complete']
+from .models import Deadlines, fileModel
 
 class fileForm(forms.ModelForm):
     class Meta:
