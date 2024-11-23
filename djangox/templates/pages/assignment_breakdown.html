@@ -6,6 +6,8 @@
 {% block title %}Assignment Breakdown{% endblock %}
 
 {% block content %}
+{% csrf_token %}
+
 <head>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -21,31 +23,61 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Include Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+    <!-- Add Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
+<!-- Debug Section -->
+<div class="debug-section" style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border: 1px solid #dee2e6;">
+    <h4>Debug Information</h4>
+    <pre id="debugInfo" style="white-space: pre-wrap;">
+        Assignment ID: {{ assignment_id }}
+        Has Existing Breakdown: {{ has_existing_breakdown }}
+    </pre>
+    {% if breakdown %}
+        <details>
+            <summary>Breakdown Data (Click to expand)</summary>
+            <pre id="breakdownData" style="white-space: pre-wrap;">{{ breakdown|pprint }}</pre>
+        </details>
+    {% else %}
+        <p class="text-danger">No breakdown data available</p>
+    {% endif %}
+</div>
+
 <div class="container mt-5">
-    <h1 class="text-center text-danger animate__animated animate__bounce">🎉 Assignment Breakdown 🎉</h1>
+    <h1 class="text-center text-danger animate__animated animate__bounce">🎉 Your Assignment Journey 🌟</h1>
 
     <!-- Progress Tracker Card -->
     <div class="card my-4">
         <div class="card-body">
-            <h5 class="card-title">Progress Tracker</h5>
+            <h5 class="card-title">✨ Progress Dashboard</h5>
             <div id="progressTracker" class="progress my-4">
                 <div class="progress-bar bg-info" id="progressFill" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
-            <p id="progressMessage" class="text-center">You have completed <span id="completedCount">0</span> out of <span id="totalCount">0</span> assignments.</p>
+            <p id="progressMessage" class="text-center">You've conquered <span id="completedCount">0</span> out of <span id="totalCount">0</span> tasks!</p>
         </div>
     </div>
 
     <!-- Revamped Loading Spinner Card -->
-    <div id="loading" class="loading card" style="display: none;">
-        <div class="card-body text-center">
-            <div class="spinner-border text-info" role="status">
-                <span class="sr-only">Loading...</span>
-            </div>
-            <h2 class="mt-3">Fetching Your Breakdown... 🚀</h2>
-            <div class="progress my-3">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" id="loadingProgress" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div id="loading" class="loading-overlay">
+        <div class="loading-container">
+            <div class="loading-content">
+                <div class="spinner-border text-primary mb-4" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <h2 class="loading-title mb-4">🤔 Analyzing assignment...</h2>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         id="loadingProgress" 
+                         role="progressbar" 
+                         style="width: 0%;" 
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -53,41 +85,130 @@
     <form id="breakdownForm" method="POST" onsubmit="return submitForm(event)" action="{% url 'assignment_breakdown' assignment_id=assignment_id %}">
         {% csrf_token %}
         <div class="text-center">
-            <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Breakdown 📊</button>
+            <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Started 🎯</button>
         </div>
     </form>
+    <div class="card my-4"></div>
+        <div class="card-body">
+            <h3 class="collapsible dropdown-toggle" id="fileUploadDropdown" data-toggle="collapse" data-target="#fileUploadContent" aria-haspopup="true" aria-expanded="false">
+                📎 Assignment Files
+            </h3>
+            <div id="fileUploadContent" class="collapse">
+                <!-- File Upload Form -->
+                <form method="post" enctype="multipart/form-data" 
+                      action="{% url 'upload_assignment_file' assignment.assignment_id %}" 
+                      class="mb-4" id="fileUploadForm">
+                    {% csrf_token %}
+                    <div class="upload-area p-4 border rounded mb-3" 
+                         id="dropZone" 
+                         ondrop="handleDrop(event)" 
+                         ondragover="handleDragOver(event)"
+                         ondragleave="handleDragLeave(event)">
+                        <div class="text-center">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                            <p>Drag and drop files here or</p>
+                            <input type="file" name="files" multiple 
+                                   class="form-control" 
+                                   accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp" 
+                                   id="fileInput"
+                                   style="display: none;">
+                            <button type="button" class="btn btn-outline-primary" 
+                                    onclick="document.getElementById('fileInput').click()">
+                                Browse Files
+                            </button>
+                        </div>
+                    </div>
+                    <div id="fileList" class="mb-3"></div>
+                    <div class="progress mb-3" style="display: none;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                </form>
+                <!-- Existing Files List -->
+            {% if assignment.files.all %}
+            <div class="row">
+                <!-- Documents -->
+                <div class="col-md-6">
+                    <h5>Documents</h5>
+                    <div class="list-group">
+                        {% for file in assignment.files.all %}
+                            {% if file.file_category == 'document' %}
+                                <div id="file-{{ file.id }}" class="file-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                    <div class="file-info">
+                                        <i class="fas {% if file.file_category == 'document' %}fa-file-alt
+                                                    {% elif file.file_category == 'image' %}fa-file-image
+                                                    {% else %}fa-file{% endif %} mr-2"></i>
+                                        <span class="file-name">{{ file.file_name }}</span>
+                                    </div>
+                                    <button onclick="deleteFile('{{ file.id }}', '{{ assignment.assignment_id }}')" type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- Images -->
+                <div class="col-md-6">
+                    <h5>Images</h5>
+                    <div class="row">
+                        {% for file in assignment.files.all %}
+                            {% if file.file_category == 'image' %}
+                                <div id="file-{{ file.id }}" class="file-item d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                    <div class="file-info">
+                                        <i class="fas {% if file.file_category == 'document' %}fa-file-alt
+                                            {% elif file.file_category == 'image' %}fa-file-image
+                                            {% else %}fa-file{% endif %} mr-2"></i>
+                                        <span class="file-name">{{ file.file_name }}</span>
+                                    </div>
+                                    <button onclick="deleteFile('{{ file.id }}', '{{ assignment.assignment_id }}')" type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                <p class="text-muted">No files uploaded yet.</p>
+            {% endif %}
+        </div>
+    </div>
 
     <div id="breakdownResults" class="breakdown-results" style="display: none;">
         <!-- Analysis Card -->
         <div class="card my-4">
             <div class="card-body">
                 <h3 class="collapsible dropdown-toggle" id="analysisDropdown" data-toggle="collapse" data-target="#analysisContent" aria-haspopup="true" aria-expanded="false">
-                    Analysis <span class="arrow">▼</span>
+                    🔍 Assignment Overview
                 </h3>
                 <div id="analysisContent" class="collapse">
-                    <p><strong>Initial Assessment:</strong> <span id="initialAssessment" class="highlight">{{ analysis.thought_process.initial_assessment }}</span></p>
-                    <p><strong>Complexity Evaluation:</strong> <span id="complexityEvaluation" class="highlight">{{ analysis.thought_process.complexity_evaluation }}</span></p>
-                    <p><strong>Complexity Scores:</strong></p>
+                    <p><strong>👀 First Look:</strong> <span id="initialAssessment" class="highlight">{{ analysis.thought_process.initial_assessment }}</span></p>
+                    <p><strong>📊 Difficulty Level:</strong> <span id="complexityEvaluation" class="highlight">{{ analysis.thought_process.complexity_evaluation }}</span></p>
+                    <p><strong>🎯 Key Points:</strong></p>
                     <ul id="complexityScores" class="score-list">
-                        <li>Overall Complexity: {{ analysis.thought_process.complexity_scores.overall_complexity }}</li>
-                        <li>Research Complexity: {{ analysis.thought_process.complexity_scores.research_complexity }}</li>
-                        <li>Technical Complexity: {{ analysis.thought_process.complexity_scores.technical_complexity }}</li>
-                        <li>Time Complexity: {{ analysis.thought_process.complexity_scores.time_complexity }}</li>
-                        <li><strong>Explanation:</strong> {{ analysis.thought_process.complexity_scores.complexity_explanation }}</li>
+                        <li>🌟 Overall: {{ analysis.thought_process.complexity_scores.overall_complexity }}</li>
+                        <li>📚 Research: {{ analysis.thought_process.complexity_scores.research_complexity }}</li>
+                        <li>💡 Technical: {{ analysis.thought_process.complexity_scores.technical_complexity }}</li>
+                        <li>⏱️ Time: {{ analysis.thought_process.complexity_scores.time_complexity }}</li>
+                        <li><strong>📝 Notes:</strong> {{ analysis.thought_process.complexity_scores.complexity_explanation }}</li>
                     </ul>
-                    <p><strong>Key Requirements:</strong></p>
+                    <p><strong>✅ Main Goals:</strong></p>
                     <ul id="keyRequirements" class="requirement-list">
                         {% for requirement in analysis.thought_process.key_requirements %}
                             <li>{{ requirement }}</li>
                         {% endfor %}
                     </ul>
-                    <p><strong>Potential Challenges:</strong></p>
+                    <p><strong>⚡ Challenges to Watch For:</strong></p>
                     <ul id="potentialChallenges" class="challenge-list">
                         {% for challenge in analysis.thought_process.potential_challenges %}
                             <li>{{ challenge }}</li>
                         {% endfor %}
                     </ul>
-                    <p><strong>Skill Level Considerations:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
+                    <p><strong>💪 Skill Tips:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
                 </div>
             </div>
         </div>
@@ -96,71 +217,143 @@
         <div class="card my-4">
             <div class="card-body">
                 <h3 class="collapsible dropdown-toggle" id="breakdownDropdown" data-toggle="collapse" data-target="#breakdownContent" aria-haspopup="true" aria-expanded="false">
-                    Assignment Breakdown <span class="arrow">▼</span>
+                    📋 Step-by-Step Plan
                 </h3>
                 <div id="breakdownContent" class="collapse">
-                    <p><strong>Total Estimated Time:</strong> <span id="totalEstimatedTime" class="highlight">{{ total_estimated_time }}</span></p>
-                    <p><strong>Work Distribution:</strong> <span id="workDistribution" class="highlight">{{ work_distribution }}</span></p>
-                    <p><strong>Breaks and Buffer:</strong> <span id="breaksAndBuffer" class="highlight">{{ breaks_and_buffer }}</span></p>
-                    <h4>Tasks:</h4>
+                    <p><strong>⏱️ Time Needed:</strong> <span id="totalEstimatedTime" class="highlight">{{ breakdown.total_estimated_time }}</span></p>
+                    <p><strong>📅 Work Plan:</strong> <span id="workDistribution" class="highlight">{{ breakdown.work_distribution }}</span></p>
+                    <p><strong>☕ Break Time:</strong> <span id="breaksAndBuffer" class="highlight">{{ breakdown.breaks_and_buffer }}</span></p>
+                    <h4>📝 Your Tasks:</h4>
                     <div id="taskList" class="task-list">
-                        {% for task in assignment_breakdown %}
-                            <div class="task-card">
+                        {% for task in breakdown.assignment_breakdown %}
+                            <div class="task-card {% if task.completed %}completed{% endif %} animate__animated animate__fadeIn">
                                 <div class="task-header" onclick="toggleTaskDetails(this)">
-                                    <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
-                                    <strong>Task {{ task.task_number }}:</strong> {{ task.description }} (Estimated Time: {{ task.estimated_time }}) - Due: {{ task.due_date|date:"F j, Y" }}
+                                    <div class="task-main-content">
+                                        <div class="checkbox-wrapper">
+                                            <input type="checkbox" 
+                                                   class="task-checkbox" 
+                                                   onchange="updateProgress()" 
+                                                   data-task-number="{{ task.task_number }}"
+                                                   {% if task.completed %}checked{% endif %}>
+                                        </div>
+                                        <div class="task-title">
+                                            <h4 class="mb-0">
+                                                <span class="task-number">Task {{ task.task_number }}:</span>
+                                                {{ task.description }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div class="task-meta">
+                                        <span class="meta-item estimated-time">
+                                            <i class="far fa-clock"></i> {{ task.estimated_time }}
+                                        </span>
+                                        {% if task.due_date %}
+                                        <span class="meta-item due-date" data-date="{{ task.due_date }}">
+                                            <i class="far fa-calendar-alt"></i> 
+                                            {{ task.due_date|date:"l, F j, Y" }}
+                                        </span>
+                                        {% endif %}
+                                        {% if task.priority %}
+                                        <span class="meta-item priority-badge {{ task.priority|lower }}">
+                                            <i class="fas fa-flag"></i> {{ task.priority }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <div class="task-details" style="display: none;">
-                                    <em>Tips:</em> {{ task.tips }}<br>
-                                    <em>YouTube Resources:</em> 
-                                    {% for resource in task.youtube_resources %}
-                                        <a href="{{ resource.link }}" target="_blank">{{ resource.title }}</a>{% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                    <br>
-                                    <em>Priority:</em> {{ task.priority }}<br>
-                                    <em>Potential Distractions:</em> 
-                                    {% if task.potential_distractions %}
-                                        {% if task.potential_distractions|length > 0 %}
-                                            {{ task.potential_distractions|join:', ' }}<br>
-                                        {% else %}
-                                            None<br>
+                                    <div class="details-grid">
+                                        {% if task.tips %}
+                                        <div class="detail-section tips-section">
+                                            <div class="section-header">
+                                                <h5><i class="fas fa-lightbulb"></i> Tips</h5>
+                                            </div>
+                                            <p>{{ task.tips }}</p>
+                                        </div>
                                         {% endif %}
-                                    {% else %}
-                                        None<br>
-                                    {% endif %}
-                                    <em>Distraction Mitigation:</em> {{ task.distraction_mitigation }}<br>
-                                    <em>Focus Techniques:</em> 
-                                    {% if task.focus_techniques %}
-                                        {% if task.focus_techniques|length > 0 %}
-                                            {{ task.focus_techniques|join:', ' }}<br>
-                                        {% else %}
-                                            None<br>
+                                        {% if task.youtube_resources %}
+                                        <div class="detail-section video-section">
+                                            <div class="video-grid">
+                                                <div class="video-thumbnail">
+                                                    <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
+                                                </div>
+                                                {% if task.youtube_resources %}
+                                                <div class="list-group">
+                                                    {% for resource in task.youtube_resources %}
+                                                        <a href="{{ resource.link }}" 
+                                                            target="_blank" 
+                                                            class="list-group-item list-group-item-action">
+                                                            <i class="fas fa-play-circle"></i> {{ resource.title }}
+                                                        </a>
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                         {% endif %}
-                                    {% else %}
-                                        None<br>
-                                    {% endif %}
-                                    <em>Reward:</em> {{ task.reward }}
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
-                    <h4>Next Task to Focus On:</h4>
-                    {% with next_task=None %}
-                        {% for task in assignment_breakdown %}
-                            {% if not task.completed %}
-                                {% if next_task is None or task.due_date < next_task.due_date %}
-                                    {% with next_task=task %}
-                                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Task Card -->
+        <div class="card my-4">
+            <div class="card-body">
+                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#nextTaskContent">
+                    Next Task to Focus On
+                </h3>
+                <div id="nextTaskContent" class="collapse show">
+                    {% if next_task %}
+                        <div class="task-card priority-high animate__animated animate__fadeIn">
+                            <div class="task-header">
+                                <h4 class="mb-3">
+                                    <i class="fas fa-star text-warning"></i> 
+                                    Task {{ next_task.task_number }}: {{ next_task.description }}
+                                </h4>
+                            </div>
+                            <div class="task-details">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><i class="far fa-clock"></i> <strong>Estimated Time:</strong> {{ next_task.estimated_time }}</p>
+                                        <p><i class="far fa-calendar-alt"></i> <strong>Due Date:</strong> {{ next_task.due_date|date:"F j, Y, g:i a" }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if next_task.tips %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-lightbulb"></i> <strong>Tips:</strong><br>
+                                                {{ next_task.tips }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if next_task.youtube_resources %}
+                                    <div class="resources mt-3">
+                                        <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
+                                        <div class="list-group">
+                                            {% for resource in next_task.youtube_resources %}
+                                                <a href="{{ resource.link }}" 
+                                                   target="_blank" 
+                                                   class="list-group-item list-group-item-action">
+                                                    <i class="fas fa-play-circle"></i> {{ resource.title }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if next_task %}
-                            <p><strong>Next Task:</strong> {{ next_task.description }} (Due: {{ next_task.due_date|date:"F j, Y" }})</p>
-                            <p><strong>Focus Mode:</strong> Prioritize this task to meet the deadline!</p>
-                        {% else %}
-                            <p>No upcoming tasks.</p>
-                        {% endif %}
-                    {% endwith %}
+                            
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success text-center">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h4>All Caught Up!</h4>
+                            <p>No upcoming tasks. Great job staying on top of your work!</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -168,106 +361,79 @@
         <!-- Additional Resources Card -->
         <div class="card my-4">
             <div class="card-body">
-                <h3>Additional Resources</h3>
-                {% if additional_resources %}
-                    <ul>
-                        {% for resource in additional_resources %}
-                            <li>{{ resource }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No additional resources available.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Reasoning Card -->
-        <div class="card my-4">
-            <div class="card-body">
-                <h3>Reasoning</h3>
-                {% if reasoning %}
-                    <p>{{ reasoning }}</p>
-                {% else %}
-                    <p>No reasoning provided.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Progress Tracking Card -->
-        <div class="card my-4">
-            <div class="card-body">
-                <h3>Progress Tracking</h3>
-                {% if progress_tracking %}
-                    <p>{{ progress_tracking }}</p>
-                {% else %}
-                    <p>No progress tracking information available.</p>
-                {% endif %}
+                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#resourcesContent">
+                    Additional Resources
+                </h3>
+                <div id="resourcesContent" class="collapse show">
+                    {% if additional_resources %}
+                        <ul class="resource-list">
+                            {% for resource in additional_resources %}
+                                <li>
+                                    <a href="{{ resource.link }}" target="_blank" class="resource-link">
+                                        <i class="fab fa-youtube"></i> {{ resource.title }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No additional resources available.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
         <!-- ADHD Specific Strategies Card -->
         <div class="card my-4">
             <div class="card-body">
-                <h3>ADHD Specific Strategies</h3>
-                <h4>Time Management:</h4>
-                {% if adhd_specific_strategies.time_management %}
-                    <ul>
-                        {% for strategy in adhd_specific_strategies.time_management %}
-                            <li>{{ strategy }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No time management strategies available.</p>
-                {% endif %}
-                <h4>Focus Improvement:</h4>
-                {% if adhd_specific_strategies.focus_improvement %}
-                    <ul>
-                        {% for strategy in adhd_specific_strategies.focus_improvement %}
-                            <li>{{ strategy }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No focus improvement strategies available.</p>
-                {% endif %}
-                <h4>Motivation Boosters:</h4>
-                {% if adhd_specific_strategies.motivation_boosters %}
-                    <ul>
-                        {% for strategy in adhd_specific_strategies.motivation_boosters %}
-                            <li>{{ strategy }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No motivation boosters available.</p>
-                {% endif %}
+                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#strategiesContent">
+                    ADHD Strategies
+                </h3>
+                <div id="strategiesContent" class="collapse show">
+                    {% if breakdown.adhd_specific_strategies %}
+                        <h4>Time Management</h4>
+                        <ul>
+                            {% for strategy in breakdown.adhd_specific_strategies.time_management %}
+                                <li>{{ strategy }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4>Focus Improvement</h4>
+                        <ul>
+                            {% for strategy in breakdown.adhd_specific_strategies.focus_improvement %}
+                                <li>{{ strategy }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4>Motivation Boosters</h4>
+                        <ul>
+                            {% for booster in breakdown.adhd_specific_strategies.motivation_boosters %}
+                                <li>{{ booster }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
         <!-- Reward System Card -->
         <div class="card my-4">
             <div class="card-body">
-                <h3>Reward System</h3>
-                <h4>Milestone Rewards:</h4>
-                {% if assignment_breakdown.reward_system.milestone_rewards %}
-                    <ul>
-                        {% for reward in assignment_breakdown.reward_system.milestone_rewards %}
-                            <li>{{ reward }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No milestone rewards available.</p>
-                {% endif %}
-                <h4>Completion Reward:</h4>
-                {% if assignment_breakdown.reward_system.completion_reward %}
-                    <p>{{ assignment_breakdown.reward_system.completion_reward }}</p>
-                {% else %}
-                    <p>No completion reward available.</p>
-                {% endif %}
-                <h4>Progress Visualization:</h4>
-                {% if assignment_breakdown.reward_system.progress_visualization %}
-                    <p>{{ assignment_breakdown.reward_system.progress_visualization }}</p>
-                {% else %}
-                    <p>No progress visualization information available.</p>
-                {% endif %}
+                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#rewardsContent">
+                    Reward System
+                </h3>
+                <div id="rewardsContent" class="collapse show">
+                    {% if breakdown.reward_system %}
+                        <h4>Milestone Rewards</h4>
+                        <ul>
+                            {% for reward in breakdown.reward_system.milestone_rewards %}
+                                <li>{{ reward }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4>Completion Reward</h4>
+                        <p>{{ breakdown.reward_system.completion_reward }}</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -276,368 +442,1641 @@
 </div>
 
 <script>
-    // Function to play a celebratory sound
-    function playCelebrationSound() {
-        const audio = new Audio('{% static "sounds/celebration.mp3" %}'); // Ensure you have a sound file in your static directory
-        audio.play();
+const DEBUG = false;
+const hasExistingBreakdown = {{ has_existing_breakdown|lower|default:'false' }};
+
+function debugLog(message, data = null) {
+    if (!DEBUG) return;
+    
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${message}`);
+    if (data) {
+        console.log('Data:', data);
+    }
+}
+
+// Hide debug section if DEBUG is false
+document.addEventListener('DOMContentLoaded', function() {
+    if (!DEBUG) {
+        const debugSection = document.querySelector('.debug-section');
+        if (debugSection) {
+            debugSection.style.display = 'none'; // Hide the debug section
+        }
+    }
+});
+
+// Define updateTaskProgress before using it
+function updateTaskProgress() {
+    debugLog('Updating task progress');
+    
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    let completedCount = 0;
+    const totalCount = checkboxes.length;
+
+    debugLog('Found checkboxes', {
+        total: totalCount,
+        checkboxes: Array.from(checkboxes).map(cb => ({
+            completed: cb.dataset.completed,
+            checked: cb.checked
+        }))
+    });
+
+    checkboxes.forEach(checkbox => {
+        const isCompleted = checkbox.dataset.completed === 'true';
+        if (isCompleted) {
+            completedCount++;
+        }
+    });
+
+    const progressPercentage = (completedCount / totalCount) * 100;
+    debugLog('Progress calculation', {
+        completed: completedCount,
+        total: totalCount,
+        percentage: progressPercentage
+    });
+    
+    // Update progress bar
+    const progressBar = document.getElementById('progressFill');
+    progressBar.style.width = `${progressPercentage}%`;
+    progressBar.setAttribute('aria-valuenow', progressPercentage);
+
+    // Update progress message
+    document.getElementById('completedCount').textContent = completedCount;
+    document.getElementById('totalCount').textContent = totalCount;
+
+    // Trigger confetti if all tasks are completed
+    if (completedCount === totalCount) {
+        debugLog('All tasks completed, triggering celebration');
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+}
+
+function createTaskCard(task) {
+    // Convert arrays to lists if they're strings
+    const distractions = typeof task.potential_distractions === 'string' ? 
+        task.potential_distractions.split(',').filter(Boolean) : 
+        task.potential_distractions || [];
+    
+    const focusTechniques = typeof task.focus_techniques === 'string' ? 
+        task.focus_techniques.split(',').filter(Boolean) : 
+        task.focus_techniques || [];
+
+    return `
+        <div class="task-card ${task.completed ? 'completed' : ''} animate__animated animate__fadeIn">
+            <div class="task-header" onclick="toggleTaskDetails(this)">
+                <div class="task-main-content">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" 
+                               class="task-checkbox" 
+                               onchange="updateProgress()" 
+                               data-task-number="${task.task_number}"
+                               ${task.completed ? 'checked' : ''}>
+                    </div>
+                    <div class="task-title">
+                        <h4 class="mb-0">
+                            <span class="task-number">Task ${task.task_number }:</span>
+                            ${task.description}
+                        </h4>
+                    </div>
+                </div>
+                <div class="task-meta">
+                    <span class="meta-item estimated-time">
+                        <i class="far fa-clock"></i> ${task.estimated_time}
+                    </span>
+                    ${task.due_date ? `
+                        <span class="meta-item due-date" data-date="${task.due_date}">
+                            <i class="far fa-calendar-alt"></i> 
+                            ${new Date(task.due_date).toLocaleString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: 'numeric'
+                            })}
+                        </span>
+                    ` : ''}
+                    ${task.priority ? `
+                        <span class="meta-item priority-badge ${task.priority.toLowerCase()}">
+                            <i class="fas fa-flag"></i> ${task.priority}
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="task-details" style="display: none;">
+                <div class="details-grid">
+                    ${task.tips ? `
+                        <div class="detail-section tips-section">
+                            <div class="section-header">
+                                <i class="fas fa-lightbulb"></i>
+                                <h5>Tips</h5>
+                            </div>
+                            <p>${task.tips}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${distractions.length > 0 ? `
+                        <div class="detail-section distractions-section">
+                            <div class="section-header">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h5>Potential Distractions</h5>
+                            </div>
+                            <ul class="distraction-list">
+                                ${distractions.map(d => `<li>${d.trim()}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${task.distraction_mitigation ? `
+                        <div class="detail-section mitigation-section">
+                            <div class="section-header">
+                                <i class="fas fa-shield-alt"></i>
+                                <h5>Distraction Mitigation</h5>
+                            </div>
+                            <p>${task.distraction_mitigation}</p>
+                        </div>
+                    ` : ''}
+
+                    ${focusTechniques.length > 0 ? `
+                        <div class="detail-section techniques-section">
+                            <div class="section-header">
+                                <i class="fas fa-bullseye"></i>
+                                <h5>Focus Techniques</h5>
+                            </div>
+                            <ul class="technique-list">
+                                ${focusTechniques.map(t => `<li>${t.trim()}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${task.reward ? `
+                        <div class="detail-section reward-section">
+                            <div class="section-header">
+                                <i class="fas fa-gift"></i>
+                                <h5>Reward</h5>
+                            </div>
+                            <p>${task.reward}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.youtube_resources && task.youtube_resources.length > 0 ? `
+                        <div class="detail-section video-section">
+                            <div class="section-header">
+                                <i class="fab fa-youtube"></i>
+                                <h5>Helpful Videos</h5>
+                            </div>
+                            <div class="video-grid">
+                                ${task.youtube_resources.map(resource => `
+                                    <div class="video-card">
+                                        <a href="${resource.link}" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           class="video-link">
+                                            <div class="video-thumbnail">
+                                                <i class="fab fa-youtube"></i>
+                                                <span class="play-icon">
+                                                    <i class="fas fa-play-circle"></i>
+                                                </span>
+                                            </div>
+                                            <div class="video-title">
+                                                ${resource.title}
+                                            </div>
+                                        </a>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Define loading configuration
+const LOADING_CONFIG = {
+    AVERAGE_TIME: 15000, // 15 seconds total
+    STEPS: [
+        { percent: 10, message: "🤔 Analyzing assignment..." },
+        { percent: 25, message: "📚 Breaking down requirements..." },
+        { percent: 40, message: "⚡ Identifying potential challenges..." },
+        { percent: 55, message: "📋 Creating task list..." },
+        { percent: 70, message: "⏱️ Estimating time requirements..." },
+        { percent: 85, message: "🎯 Finalizing breakdown..." },
+        { percent: 95, message: "✨ Almost there..." }
+    ]
+};
+
+function simulateProgress() {
+    let currentStep = 0;
+    const progressBar = document.getElementById('loadingProgress');
+    const loadingTitle = document.querySelector('.loading-title');
+    
+    if (!progressBar || !loadingTitle) {
+        console.error('Progress elements not found:', { progressBar, loadingTitle });
+        return;
     }
 
-    function showLoading() {
-        document.getElementById('loading').style.display = 'flex'; // Show loading visual
-        document.getElementById('breakdownForm').style.display = 'none'; // Hide the form
-        document.querySelector('.container').style.backgroundColor = '#2c3e50'; // Dark background for focus
-        document.querySelector('.container').style.color = 'white'; // White text for contrast
+    // Reset progress
+    progressBar.style.width = '0%';
+    progressBar.setAttribute('aria-valuenow', 0);
+    loadingTitle.textContent = LOADING_CONFIG.STEPS[0].message;
 
-        // Reset loading progress
-        const loadingProgress = document.getElementById('loadingProgress');
-        loadingProgress.style.width = '0%';
-        loadingProgress.setAttribute('aria-valuenow', 0);
-    }
-
-    function hideLoading() {
-        document.getElementById('loading').style.display = 'none'; // Hide loading spinner
-        document.getElementById('breakdownForm').style.display = 'block'; // Show the form again
-        document.querySelector('.container').style.backgroundColor = ''; // Reset container background color
-        document.querySelector('.container').style.color = ''; // Reset container text color
-    }
-
-    function updateLoadingProgress(percentage) {
-        const loadingProgress = document.getElementById('loadingProgress');
-        loadingProgress.style.width = `${percentage}%`;
-        loadingProgress.setAttribute('aria-valuenow', percentage);
-    }
-
-    function submitForm(event) {
-        event.preventDefault(); // Prevent the default form submission
-        showLoading(); // Show loading visual
+    function animateToPercent(fromPercent, toPercent, duration) {
+        const startTime = performance.now();
         
-        const formData = new FormData(document.getElementById('breakdownForm'));
-        
-        fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json(); // Expecting JSON response
-        })
-        .then(data => {
-            console.log("Response Data:", data); // Log the data for debugging
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
             
-            const breakdownResultsElement = document.getElementById('breakdownResults');
-            const noBreakdownMessage = document.getElementById('noBreakdownMessage');
+            const currentPercent = fromPercent + (toPercent - fromPercent) * progress;
+            progressBar.style.width = `${currentPercent}%`;
+            progressBar.setAttribute('aria-valuenow', Math.round(currentPercent));
 
-            if (data) {
-                breakdownResultsElement.style.display = 'block'; // Show results
-                noBreakdownMessage.style.display = 'none'; // Hide no breakdown message
-
-                // Play celebration sound
-                playCelebrationSound();
-
-                // Trigger confetti
-                confetti();
-
-                // Update progress tracker
-                const totalAssignments = data.assignment_breakdown.length;
-                const completedAssignments = data.assignment_breakdown.filter(task => task.completed).length;
-                document.getElementById('completedCount').textContent = completedAssignments;
-                document.getElementById('totalCount').textContent = totalAssignments;
-                document.getElementById('progressFill').style.width = `${(completedAssignments / totalAssignments) * 100}%`;
-
-                // Populate complexity scores
-                const complexityScores = document.getElementById('complexityScores');
-                complexityScores.innerHTML = ''; // Clear previous scores
-                for (const [key, value] of Object.entries(data.analysis.thought_process.complexity_scores)) {
-                    const li = document.createElement('li');
-                    li.textContent = `${key}: ${value}`;
-                    complexityScores.appendChild(li);
-                }
-
-                // Populate key requirements
-                const keyRequirements = document.getElementById('keyRequirements');
-                keyRequirements.innerHTML = ''; // Clear previous requirements
-                data.analysis.thought_process.key_requirements.forEach(req => {
-                    const li = document.createElement('li');
-                    li.textContent = req;
-                    keyRequirements.appendChild(li);
-                });
-
-                // Populate potential challenges
-                const potentialChallenges = document.getElementById('potentialChallenges');
-                potentialChallenges.innerHTML = ''; // Clear previous challenges
-                data.analysis.thought_process.potential_challenges.forEach(challenge => {
-                    const li = document.createElement('li');
-                    li.textContent = challenge;
-                    potentialChallenges.appendChild(li);
-                });
-
-                // Populate skill level considerations
-                document.getElementById('skillLevelConsiderations').textContent = data.analysis.thought_process.skill_level_considerations;
-
-                // Populate total estimated time
-                document.getElementById('totalEstimatedTime').textContent = data.total_estimated_time;
-
-                // Populate work distribution
-                document.getElementById('workDistribution').textContent = data.work_distribution;
-
-                // Populate breaks and buffer
-                document.getElementById('breaksAndBuffer').textContent = data.breaks_and_buffer;
-
-                // Populate task list
-                const taskList = document.getElementById('taskList');
-                taskList.innerHTML = ''; // Clear previous tasks
-                data.assignment_breakdown.forEach(task => {
-                    const taskCard = document.createElement('div');
-                    taskCard.className = 'task-card';
-                    taskCard.style.borderColor = getBorderColor(task.estimated_time);
-                    taskCard.innerHTML = `
-                        <div class="task-header" onclick="toggleTaskDetails(this)">
-                            <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
-                            <strong>Task ${task.task_number}:</strong> ${task.description} (Estimated Time: ${task.estimated_time}) - Due: ${new Date(task.due_date).toLocaleString()}
-                        </div>
-                        <div class="task-details" style="display: none;">
-                            <em>Tips:</em> ${task.tips}<br>
-                            <em>YouTube Resources:</em> ${task.youtube_resources.map(resource => `<a href="${resource.link}" target="_blank">${resource.title}</a>`).join(', ')}
-                            <br>
-                            <em>Priority:</em> ${task.priority}<br>
-                            <em>Potential Distractions:</em> ${task.potential_distractions.length > 0 ? task.potential_distractions.join(', ') : 'None'}<br>
-                            <em>Distraction Mitigation:</em> ${task.distraction_mitigation}<br>
-                            <em>Focus Techniques:</em> ${task.focus_techniques.length > 0 ? task.focus_techniques.join(', ') : 'None'}<br>
-                            <em>Reward:</em> ${task.reward}
-                        </div>
-                    `;
-                    taskList.appendChild(taskCard);
-                });
-            } else {
-                console.error('Breakdown results or data element not found.');
+            if (progress < 1) {
+                requestAnimationFrame(update);
             }
-            hideLoading(); // Hide loading spinner after successful response
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while processing your request: ' + error.message);
-            hideLoading(); // Hide loading spinner on error
-        });
+        }
+
+        requestAnimationFrame(update);
     }
 
-    function updateProgress() {
-        const checkboxes = document.querySelectorAll('.task-checkbox');
-        const totalTasks = checkboxes.length;
-        const completedTasks = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    function nextStep() {
+        if (currentStep >= LOADING_CONFIG.STEPS.length) return;
 
-        // Update progress counts
-        document.getElementById('completedCount').textContent = completedTasks;
-        document.getElementById('totalCount').textContent = totalTasks;
-        document.getElementById('progressFill').style.width = `${(completedTasks / totalTasks) * 100}%`;
+        const currentPercent = currentStep > 0 ? LOADING_CONFIG.STEPS[currentStep - 1].percent : 0;
+        const targetPercent = LOADING_CONFIG.STEPS[currentStep].percent;
+        const stepDuration = LOADING_CONFIG.AVERAGE_TIME / LOADING_CONFIG.STEPS.length;
 
-        // Visual feedback for completed tasks
-        checkboxes.forEach(checkbox => {
-            const taskCard = checkbox.closest('.task-card');
-            if (checkbox.checked) {
-                taskCard.style.backgroundColor = '#d5e8d4'; // Light green background for completed tasks
-                taskCard.querySelector('.task-header').style.textDecoration = 'line-through'; // Strikethrough text
-            } else {
-                taskCard.style.backgroundColor = ''; // Reset background color
-                taskCard.querySelector('.task-header').style.textDecoration = 'none'; // Reset strikethrough
-            }
-        });
-    }
-
-    function toggleSection(header) {
-        const content = header.nextElementSibling;
-        content.style.display = content.style.display === 'none' ? 'block' : 'none';
-        header.querySelector('.arrow').textContent = content.style.display === 'block' ? '▲' : '▼';
-    }
-
-    function toggleTaskDetails(header) {
-        const details = header.nextElementSibling;
-        details.style.display = details.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function getBorderColor(estimatedTime) {
-        const timeRange = estimatedTime.split('-').map(t => parseInt(t));
-        const averageTime = (timeRange.length === 2) ? (timeRange[0] + timeRange[1]) / 2 : timeRange[0];
+        // Update message
+        loadingTitle.textContent = LOADING_CONFIG.STEPS[currentStep].message;
         
-        if (averageTime <= 30) return '#2ecc71'; // Green for short tasks
-        if (averageTime <= 60) return '#f1c40f'; // Yellow for medium tasks
-        return '#e74c3c'; // Red for long tasks
-    }
-</script>
+        // Animate progress bar to next percentage
+        animateToPercent(currentPercent, targetPercent, stepDuration);
 
-<style>
-    body {
-        font-family: 'Comic Sans MS', cursive, sans-serif; /* Fun font */
-        background-color: #f9f9f9; /* Light background */
-        color: #333; /* Dark text for contrast */
-        margin: 0;
-        padding: 20px;
-    }
+        currentStep++;
 
-    .container {
-        max-width: 800px;
-        margin: auto;
-        background: #ffffff; /* White background for the container */
-        padding: 20px;
-        border-radius: 15px; /* More rounded corners */
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Softer shadow */
-        transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+        // Schedule next step if not at end
+        if (currentStep < LOADING_CONFIG.STEPS.length) {
+            setTimeout(nextStep, stepDuration);
+        } else {
+            // Final animation to 100%
+            setTimeout(() => {
+                animateToPercent(targetPercent, 100, 1000);
+                loadingTitle.textContent = '✅ Analysis complete!';
+            }, stepDuration);
+        }
     }
 
-    h1 {
-        color: #e74c3c; /* Bright red for headings */
-        text-align: center;
-        font-size: 3.5em; /* Larger font size for emphasis */
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-        margin-bottom: 20px; /* Space below heading */
-    }
+    // Start the progress animation
+    nextStep();
+}
 
-    .progress-tracker {
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .progress-bar {
+// Add some CSS for better visualization
+const style = document.createElement('style');
+style.textContent = `
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
-        background-color: #e0e0e0;
-        border-radius: 10px;
-        overflow: hidden;
-        height: 30px; /* Increased height for visibility */
-        margin-top: 10px;
-    }
-
-    .progress-fill {
         height: 100%;
-        background-color: #3498db; /* Bright blue */
-        width: 0; /* Start with 0 width */
-        transition: width 0.5s; /* Smooth transition for progress */
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
     }
 
-    .loading {
-        position: fixed; /* Fix the position to cover the entire screen */
-        top: 0; /* Align to the top */
-        left: 0; /* Align to the left */
-        width: 100vw; /* Full width of the viewport */
-        height: 100vh; /* Full height of the viewport */
-        display: flex; /* Use flexbox for centering */
-        flex-direction: column; /* Stack items vertically */
-        align-items: center; /* Center items horizontally */
-        justify-content: center; /* Center items vertically */
-        background-color: rgba(44, 62, 80, 0.8); /* Semi-transparent dark background */
-        z-index: 9999; /* Ensure it appears above other content */
-        color: white; /* White text for contrast */
-        font-size: 2em; /* Larger font for loading message */
+    .loading-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 600px;
+        width: 90%;
     }
 
-    .loading-gif {
-        width: 100%; /* Set width to 100% of the viewport */
-        height: 100%; /* Set height to 100% of the viewport */
-        object-fit: cover; /* Cover the entire area while maintaining aspect ratio */
-    }
-
-    .task-card {
-        background-color: #ffffff; /* White background for task cards */
-        border: 2px solid #3498db; /* Bright blue border */
-        border-radius: 10px; /* More rounded corners */
-        padding: 20px; /* Increased padding */
-        margin: 10px 0;
-        cursor: pointer;
-        transition: box-shadow 0.3s, transform 0.2s; /* Add transform for task card */
-        position: relative; /* For positioning icons */
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    }
-
-    .task-card:hover {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
-        transform: scale(1.03); /* Slightly enlarge task card on hover */
-    }
-
-    .task-header {
-        font-weight: bold;
-        color: #2c3e50;
-        cursor: pointer;
-        display: flex; /* Flexbox for alignment */
-        align-items: center; /* Center items vertically */
-        font-size: 1.2em; /* Slightly larger font size */
-    }
-
-    .task-header input[type="checkbox"] {
-        margin-right: 10px; /* Space between checkbox and text */
-        transform: scale(1.5); /* Larger checkbox */
-    }
-
-    .task-details {
-        margin-top: 10px;
-        color: #555;
-        line-height: 1.5; /* Increased line height for readability */
-    }
-
-    .arrow {
-        float: right;
-        transition: transform 0.3s; /* Smooth transition for arrow */
-    }
-
-    .collapsible.active .arrow {
-        transform: rotate(180deg); /* Rotate arrow when active */
-    }
-
-    .btn {
-        background-color: #e74c3c; /* Bright red for the button */
-        color: white; /* Text color */
-        padding: 15px 25px; /* Increased padding for a better touch target */
-        border: none; /* Remove default border */
-        border-radius: 10px; /* More rounded corners */
-        cursor: pointer; /* Pointer cursor on hover */
-        font-size: 18px; /* Larger font size */
-        font-weight: bold; /* Bold text */
-        text-align: center; /* Center text */
-        text-decoration: none; /* Remove underline */
-        display: inline-block; /* Allow margin and padding */
-        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; /* Smooth transitions */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
-    }
-
-    .btn:hover {
-        background-color: #c0392b; /* Darker shade on hover */
-        transform: translateY(-2px); /* Slight lift effect */
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
-    }
-
-    .btn:active {
-        transform: translateY(0); /* Reset lift effect on click */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Reset shadow */
-    }
-
-    .button-container {
-        display: flex; /* Use flexbox */
-        justify-content: center; /* Center horizontally */
-        margin: 20px 0; /* Optional: Add some margin for spacing */
+    .loading-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .progress {
-        height: 20px;
-        margin-top: 10px;
+        width: 100%;
+        height: 25px;
+        background-color: #e9ecef;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .progress-bar {
         background-color: #007bff;
-        color: white;
-        text-align: center;
-        line-height: 20px;
+        transition: width 0.5s ease-in-out;
     }
 
-    .alert {
-        border-left-width: 4px;
+    .loading-title {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+`;
+document.head.appendChild(style);
+
+async function submitForm(event) {
+    event.preventDefault();
+    debugLog('Form submitted');
+
+    const loadingElement = document.getElementById('loading');
+    const formElement = document.getElementById('breakdownForm');
+    const resultsElement = document.getElementById('breakdownResults');
+
+    try {
+        // Show loading state
+        if (loadingElement && formElement && resultsElement) {
+            formElement.style.display = 'none';
+            loadingElement.style.display = 'block';
+            resultsElement.style.display = 'none';
+        }
+
+        // Start progress animation
+        simulateProgress();
+
+        // Get form data
+        const form = event.target;
+        const formData = new FormData(form);
+        const assignment_id = formData.get('assignment_id');
+
+        // Make the API call
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                assignment_id: assignment_id
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Error getting breakdown: ${response.status}`);
+        }
+
+        const data = await response.json();
+        debugLog('Received response:', data);
+
+        if (data.status === 'success') {
+            window.location.reload();
+            // // Hide loading and show results
+            // if (loadingElement && resultsElement) {
+            //     loadingElement.style.display = 'none';
+            //     resultsElement.style.display = 'block';
+                
+            // }
+
+            // Update the task list and next task
+            if (data.tasks) {
+                updateTaskList(data.tasks);
+                updateNextTask(data.tasks);
+            }
+        } else {
+            throw new Error(data.message || 'Failed to get assignment breakdown');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const errorMessage = document.getElementById('noBreakdownMessage');
+        if (errorMessage) {
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = `Error: ${error.message}`;
+        }
+        // Show form again on error
+        if (formElement) {
+            formElement.style.display = 'block';
+        }
+    } finally {
+        // Hide loading spinner after a delay to ensure progress animation completes
+        setTimeout(() => {
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }, 1000);
+    }
+}
+// Add event listener for when the page is hidden/shown
+// Add event listener for when the page is hidden/shown
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        simulateProgress();
+    }
+});
+
+function updateNextTask(tasks) {
+    const nextIncompleteTask = tasks.find(task => !task.completed);
+    const nextTaskContent = document.getElementById('nextTaskContent');
+    
+    if (!nextTaskContent) return;
+
+    if (nextIncompleteTask) {
+        nextTaskContent.innerHTML = `
+            <div class="task-card priority-high animate__animated animate__fadeIn">
+                <div class="task-header">
+                    <h4 class="mb-3">
+                        <i class="fas fa-star text-warning"></i> 
+                        Task ${nextIncompleteTask.task_number }: ${nextIncompleteTask.description}
+                    </h4>
+                </div>
+                <div class="task-details">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><i class="far fa-clock"></i> <strong>Estimated Time:</strong> ${nextIncompleteTask.estimated_time}</p>
+                            <p><i class="far fa-calendar-alt"></i> <strong>Due Date:</strong> ${
+                                new Date(nextIncompleteTask.due_date).toLocaleString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: 'numeric'
+                                })
+                            }</p>
+                        </div>
+                        <div class="col-md-6">
+                            ${nextIncompleteTask.tips ? `
+                                <div class="alert alert-info">
+                                    <i class="fas fa-lightbulb"></i> <strong>Tips:</strong><br>
+                                    ${nextIncompleteTask.tips}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    ${nextIncompleteTask.youtube_resources && nextIncompleteTask.youtube_resources.length > 0 ? `
+                        <div class="resources mt-3">
+                            <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
+                            <div class="list-group">
+                                ${nextIncompleteTask.youtube_resources.map(resource => `
+                                    <a href="${resource.link}" 
+                                       target="_blank" 
+                                       class="list-group-item list-group-item-action">
+                                        <i class="fas fa-play-circle"></i> ${resource.title}
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    } else {
+        nextTaskContent.innerHTML = `
+            <div class="alert alert-success text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4>All Caught Up!</h4>
+                <p>No upcoming tasks. Great job staying on top of your work!</p>
+            </div>
+        `;
+    }
+}
+
+function getTaskDataFromElement(taskCard) {
+    // Helper function to extract task data from DOM element
+    return {
+        description: taskCard.querySelector('.task-header').textContent.trim(),
+        estimated_time: taskCard.querySelector('.estimated-time')?.textContent.trim(),
+        due_date: taskCard.querySelector('.due-date')?.dataset.date,
+        tips: taskCard.querySelector('.task-details')?.querySelector('em:contains("Tips:")')?.nextSibling?.textContent.trim(),
+        youtube_resources: Array.from(taskCard.querySelectorAll('.task-details a')).map(a => ({
+            link: a.href,
+            title: a.textContent.trim()
+        }))
+    };
+}
+
+// Initialize after all functions are defined
+document.addEventListener('DOMContentLoaded', function() {
+    debugLog('Page loaded, initializing...');
+    debugLog('Has existing breakdown:', hasExistingBreakdown);
+    
+    if (hasExistingBreakdown) {
+        debugLog('Showing existing breakdown');
+        document.getElementById('breakdownResults').style.display = 'block';
+        updateTaskProgress();
+    } else {
+        debugLog('No existing breakdown, showing form');
+    }
+});
+
+// Function to play a celebratory sound
+function playCelebrationSound() {
+    const audio = new Audio('{% static "sounds/celebration.mp3" %}'); // Ensure you have a sound file in your static directory
+    audio.play();
+}
+
+function showLoading() {
+    document.getElementById('loading').style.display = 'flex'; // Show loading visual
+    document.getElementById('breakdownForm').style.display = 'none'; // Hide the form
+    document.querySelector('.container').style.backgroundColor = '#2c3e50'; // Dark background for focus
+    document.querySelector('.container').style.color = 'white'; // White text for contrast
+
+    // Reset loading progress
+    const loadingProgress = document.getElementById('loadingProgress');
+    loadingProgress.style.width = '0%';
+    loadingProgress.setAttribute('aria-valuenow', 0);
+}
+
+function hideLoading() {
+    document.getElementById('loading').style.display = 'none'; // Hide loading spinner
+    document.getElementById('breakdownForm').style.display = 'block'; // Show the form again
+    document.querySelector('.container').style.backgroundColor = ''; // Reset container background color
+    document.querySelector('.container').style.color = ''; // Reset container text color
+}
+
+function updateLoadingProgress(percentage) {
+    const loadingProgress = document.getElementById('loadingProgress');
+    loadingProgress.style.width = `${percentage}%`;
+    loadingProgress.setAttribute('aria-valuenow', percentage);
+}
+
+function toggleSection(header) {
+    const content = header.nextElementSibling;
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    header.querySelector('.arrow').textContent = content.style.display === 'block' ? '▲' : '▼';
+}
+
+function toggleTaskDetails(header) {
+    const details = header.nextElementSibling;
+    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+}
+
+function getBorderColor(estimatedTime) {
+    const timeRange = estimatedTime.split('-').map(t => parseInt(t));
+    const averageTime = (timeRange.length === 2) ? (timeRange[0] + timeRange[1]) / 2 : timeRange[0];
+    
+    if (averageTime <= 30) return '#2ecc71'; // Green for short tasks
+    if (averageTime <= 60) return '#f1c40f'; // Yellow for medium tasks
+    return '#e74c3c'; // Red for long tasks
+}
+
+function findNextIncompleteTask() {
+    const taskCards = document.querySelectorAll('.task-card');
+    for (const taskCard of taskCards) {
+        const checkbox = taskCard.querySelector('.task-checkbox');
+        if (!checkbox.checked) {
+            return {
+                taskNumber: checkbox.dataset.taskNumber,
+                description: taskCard.querySelector('strong').nextSibling.textContent.trim(),
+                estimatedTime: taskCard.querySelector('.estimated-time').textContent.trim(),
+                dueDate: taskCard.querySelector('.due-date')?.querySelector('script')?.textContent
+            };
+        }
+    }
+    return null;
+}
+
+function updateNextTaskDisplay(nextTask) {
+    const nextTaskSection = document.querySelector('.next-task-card');
+    
+    if (!nextTask) {
+        // If no next task, hide or update the section accordingly
+        if (nextTaskSection) {
+            nextTaskSection.innerHTML = `
+                <h4><i class="fas fa-check-circle text-success"></i> All Tasks Completed!</h4>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="card-text text-success">
+                            
+            `;
+        }
+    } else {
+        // If there's a next task, update the section accordingly
+        nextTaskSection.innerHTML = `
+            <div class="task-card priority-high animate__animated animate__fadeIn">
+                <div class="task-header">
+                    <h4 class="mb-3">
+                        <i class="fas fa-star text-warning"></i> 
+                        Task ${nextTask.taskNumber}: ${nextTask.description}
+                    </h4>
+                </div>
+                <div class="task-details">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><i class="far fa-clock"></i> <strong>Estimated Time:</strong> ${nextTask.estimatedTime}</p>
+                            <p><i class="far fa-calendar-alt"></i> <strong>Due Date:</strong> ${nextTask.dueDate}</p>
+                        </div>
+                        <div class="col-md-6">
+                            ${nextTask.tips ? `<div class="alert alert-info">
+                                <i class="fas fa-lightbulb"></i> <strong>Tips:</strong><br>
+                                ${nextTask.tips}
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${nextTask.youtubeResources ? `<div class="resources mt-3">
+                        <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
+                        <div class="list-group">
+                            ${nextTask.youtubeResources.map(resource => `<a href="${resource.link}" target="_blank" class="list-group-item list-group-item-action">
+                                <i class="fas fa-play-circle"></i> ${resource.title}
+                            </a>`).join('')}
+                        </div>
+                    </div>` : ''}
+                
+                </div>
+            </div>
+        `;
+    }
+}
+
+function saveProgress(completedCount, totalCount) {
+    const assignmentId = getAssignmentIdFromUrl();
+    fetch(`/api/save-progress/${assignmentId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            completed_count: completedCount,
+            total_count: totalCount,
+            assignment_id: assignmentId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Progress saved:', data);
+    })
+    .catch(error => {
+        console.error('Error saving progress:', error);
+    });
+}
+
+function markTaskComplete(taskNumber) {
+    const checkbox = document.querySelector(`.task-checkbox[data-task-number="${taskNumber}"]`);
+    if (checkbox) {
+        checkbox.checked = true;
+        updateProgress();
+    }
+}
+
+// Initialize progress on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+});
+
+// Add event listeners to all checkboxes
+document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateProgress);
+});
+
+async function markTaskComplete(taskNumber) {
+    const checkbox = document.querySelector(`.task-checkbox[data-task-number="${taskNumber}"]`);
+    if (checkbox) {
+        checkbox.checked = true;
+        
+        try {
+            // Get assignment ID from URL
+            const assignmentId = getAssignmentIdFromUrl();
+            if (!assignmentId) {
+                console.error('No assignment ID found');
+                return;
+            }
+            // Save task completion status
+            const response = await fetch(`/api/save-task-status/${taskNumber}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    completed: true,
+                    assignment_id: assignmentId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save task status');
+            }
+
+            // Update progress only if save was successful
+            updateProgress();
+            
+            // Add visual feedback
+            const taskCard = checkbox.closest('.task-card');
+            if (taskCard) {
+                taskCard.classList.add('completed');
+                taskCard.classList.add('animate__animated', 'animate__fadeIn');
+            }
+
+        } catch (error) {
+            console.error('Error saving task status:', error);
+            checkbox.checked = false;
+            alert('Failed to save task completion. Please try again.');
+        }
+    }
+}
+
+// Add event listener for checkbox changes
+document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', async function(event) {
+        const taskNumber = this.dataset.taskNumber;
+        const isCompleted = this.checked;
+        
+        try {
+            // Get assignment ID from URL
+            const assignmentId = getAssignmentIdFromUrl();
+            if (!assignmentId) {
+                console.error('No assignment ID found');
+                return;
+            }
+            const response = await fetch(`/api/save-task-status/${taskNumber}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    completed: isCompleted,
+                    assignment_id: assignmentId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save task status');
+            }
+
+            updateProgress();
+            
+            // Add visual feedback
+            const taskCard = this.closest('.task-card');
+            if (taskCard) {
+                if (isCompleted) {
+                    taskCard.classList.add('completed');
+                } else {
+                    taskCard.classList.remove('completed');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error saving task status:', error);
+            this.checked = !isCompleted;
+            alert('Failed to save task completion. Please try again.');
+        }
+    });
+});
+
+// Add this function to handle task detail toggling
+function toggleTaskDetails(element) {
+    // Find the details div that follows the header
+    const detailsDiv = element.nextElementSibling;
+    if (!detailsDiv || !detailsDiv.classList.contains('task-details')) {
+        return; // Exit if no details div found
     }
 
-    .alert-warning {
-        border-left-color: #ffc107;
+    // Toggle the display
+    if (detailsDiv.style.display === 'none' || !detailsDiv.style.display) {
+        detailsDiv.style.display = 'block';
+        // Add animation class
+        detailsDiv.classList.add('animate__animated', 'animate__fadeIn');
+    } else {
+        detailsDiv.style.display = 'none';
+        // Remove animation classes
+        detailsDiv.classList.remove('animate__animated', 'animate__fadeIn');
     }
 
-    .alert-success {
-        border-left-color: #28a745;
+    // Toggle arrow direction if it exists
+    const arrow = element.querySelector('.arrow');
+    if (arrow) {
+        arrow.style.transform = detailsDiv.style.display === 'block' ? 'rotate(180deg)' : 'rotate(0deg)';
     }
+}
+
+function updateTaskList(tasks) {
+    const taskList = document.getElementById('taskList');
+    if (!taskList) {
+        console.error('Task list container not found');
+        return;
+    }
+
+    taskList.innerHTML = tasks.map(task => createTaskCard(task)).join('');
+    
+    // Add event listeners to new checkboxes
+    taskList.querySelectorAll('.task-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const taskCard = checkbox.closest('.task-card');
+            if (taskCard) {
+                if (checkbox.checked) {
+                    taskCard.classList.add('completed');
+                } else {
+                    taskCard.classList.remove('completed');
+                }
+            }
+            updateProgress();
+        });
+    });
+
+    // Initialize progress
+    updateProgress();
+}
+
+// Function to get assignment ID from URL
+function getAssignmentIdFromUrl() {
+    // URL pattern: /assignments/{assignment_id}/breakdown/
+    const pathParts = window.location.pathname.split('/');
+    const assignmentIdIndex = pathParts.indexOf('assignments') + 1;
+    if (assignmentIdIndex > 0 && assignmentIdIndex < pathParts.length) {
+        return pathParts[assignmentIdIndex];
+    }
+    console.error('Could not find assignment ID in URL');
+    return null;
+}
+
+// Function to get CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+}
+
+// Updated progress function
+async function updateProgress() {
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    let completedCount = 0;
+    const totalCount = checkboxes.length;
+
+    // Count completed tasks
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) completedCount++;
+    });
+
+    // Update progress bar
+    const progressBar = document.getElementById('progressFill');
+    if (progressBar) {
+        const progressPercentage = (completedCount / totalCount) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
+        progressBar.setAttribute('aria-valuenow', progressPercentage);
+    }
+
+    // Update progress message
+    const completedElement = document.getElementById('completedCount');
+    const totalElement = document.getElementById('totalCount');
+    if (completedElement) completedElement.textContent = completedCount;
+    if (totalElement) totalElement.textContent = totalCount;
+
+    // Get assignment ID from URL
+    const assignment_id = getAssignmentIdFromUrl();
+    if (!assignment_id) {
+        console.error('No assignment ID found');
+        return;
+    }
+
+    // Get CSRF token
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error('No CSRF token found');
+        return;
+    }
+
+    // Save to backend
+    try {
+        const response = await fetch(`/api/save-progress/${assignment_id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                completed_count: completedCount,
+                total_count: totalCount,
+                assignment_id: assignment_id
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            // Show confetti for 100% completion
+            if (completedCount === totalCount) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        } else {
+            console.error('Error saving progress:', data.message);
+        }
+    } catch (error) {
+        console.error('Error updating progress:', error);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial progress update
+    updateProgress();
+    
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateProgress);
+    });
+});
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+    document.getElementById('dropZone').classList.remove('dragover');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('dropZone').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('dropZone').classList.remove('dragover');
+}
+
+function handleFiles(files) {
+    const fileInput = document.getElementById('fileInput');
+    fileInput.files = files;
+    updateFileList(files);
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    updateFileList(this.files);
+});
+
+function updateFileList(files) {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    
+    for (let file of files) {
+        const div = document.createElement('div');
+        div.className = 'file-preview';
+        
+        if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            div.appendChild(img);
+        } else {
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-file fa-2x mr-3';
+            div.appendChild(icon);
+        }
+                        
+        div.appendChild(document.createTextNode(file.name));
+        fileList.appendChild(div);
+    }
+}
+
+// Handle form submission
+document.getElementById('fileUploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const progressBar = document.querySelector('.progress');
+    const progressBarFill = progressBar.querySelector('.progress-bar');
+    
+    progressBar.style.display = 'block';
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Clear the file input and preview
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileList').innerHTML = '';
+            // Show success message
+            alert(data.message);
+            // Reload the page to show new files
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while uploading files');
+    })
+    .finally(() => {
+        progressBar.style.display = 'none';
+    });
+});
+
+function deleteFile(fileId, assignmentId) {
+    if (confirm('Are you sure you want to delete this file?')) {
+        fetch(`/assignments/${assignmentId}/delete-file/${fileId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Remove the file element from the DOM
+                const fileElement = document.getElementById(`file-${fileId}`);
+                if (fileElement) {
+                    fileElement.remove();
+                }
+                // Show success message
+                showAlert('success', 'File deleted successfully');
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'An error occurred while deleting the file');
+        });
+    }
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    `;
+    
+    // Insert the alert at the top of the file list
+    const fileList = document.querySelector('.file-list');
+    if (fileList) {
+        fileList.insertBefore(alertDiv, fileList.firstChild);
+    }
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+<style>
+:root {
+    --primary-color: #FF6B6B;      /* Cheerful coral red */
+    --secondary-color: #4ECDC4;    /* Fresh mint */
+    --accent-color: #FFE66D;       /* Sunny yellow */
+    --text-primary: #2C3E50;       /* Deep blue-grey */
+    --text-secondary: #95A5A6;     /* Soft grey */
+    --background-light: #F7F9FC;   /* Light blue-grey */
+    --success-color: #2ECC71;      /* Fresh green */
+    --warning-color: #F1C40F;      /* Warm yellow */
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--background-light);
+    color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Add styles for the collapsible arrows */
+.collapsible {
+    display: flex;
+    justify-content: space-between; /* Aligns the arrow to the right */
+    align-items: center; /* Centers the content vertically */
+    padding: 15px; /* Adds padding for better spacing */
+    background-color: var(--background-light); /* Background color */
+    border-radius: 10px; /* Rounded corners */
+    transition: background-color 0.2s; /* Smooth background transition */
+}
+
+.collapsible:hover {
+    background-color: rgba(247, 249, 252, 0.8); /* Change background on hover */
+}
+
+/* Adjust margin for the "Your Assignment Journey" header */
+h1.text-center.text-danger {
+    margin-top: 40px; /* Increase the top margin for more space */
+}
+
+.arrow {
+    font-size: 1.2rem; /* Increase arrow size */
+    color: var(--primary-color); /* Set arrow color */
+    transition: transform 0.2s; /* Smooth transition for any future animations */
+    margin-left: 10px; /* Add space between the text and the arrow */
+    margin-right: 0; /* Ensure no extra margin on the right */
+}
+
+/* Optional: Add a hover effect for the arrow */
+.collapsible:hover .arrow {
+    color: var(--secondary-color); /* Change color on hover */
+}
+
+/* Update loading styles */
+.loading-content {
+    font-family: 'Quicksand', sans-serif;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.loading-content h2 {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.loading-content .spinner-border {
+    color: var(--primary-color);
+}
+
+.loading-content .progress {
+    height: 12px;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.loading-content .progress-bar {
+    background-color: var(--primary-color);
+    background-image: linear-gradient(45deg, 
+        rgba(255,255,255,.15) 25%, 
+        transparent 25%, 
+        transparent 50%, 
+        rgba(255,255,255,.15) 50%, 
+        rgba(255,255,255,.15) 75%, 
+        transparent 75%, 
+        transparent);
+}
+
+/* Task cards styling */
+.task-card {
+    border: none;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+.task-header {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.task-checkbox {
+    margin-right: 1rem;
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.task-meta {
+    margin-top: 0.75rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.task-details {
+    padding: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin-top: 0.5rem;
+}
+
+.task-details em {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-style: normal;
+}
+
+.estimated-time, .due-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.task-card.completed {
+    border-left-color: var(--success-color);
+    background-color: rgba(46, 204, 113, 0.05);
+}
+
+/* Buttons styling */
+.btn-danger {
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 12px 24px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #ff5252;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+/* Progress tracker styling */
+.progress-tracker .progress {
+    height: 15px;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-tracker .progress-bar {
+    background-color: var(--secondary-color);
+    transition: width 0.5s ease;
+}
+
+/* Card headers */
+.card-title {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+/* Task meta information */
+.task-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Animations */
+.animate__animated {
+    animation-duration: 0.8s;
+}
+
+/* Debug section styling */
+.debug-section {
+    background-color: var(--background-light);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.alert-info {
+    background-color: rgba(78, 205, 196, 0.1);
+    color: var(--secondary-color);
+}
+
+/* Resource links */
+.resource-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.resource-link:hover {
+    color: var(--primary-color);
+}
+
+/* Collapsible sections */
+.collapsible {
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: var(--background-light);
+    transition: background-color 0.2s;
+}
+
+.collapsible:hover {
+    background-color: rgba(247, 249, 252, 0.8);
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 9999;
+    transition: background-color 0.2s;
+}
+
+.collapsible:hover {
+    background-color: rgba(247, 249, 252, 0.8);
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 9999;
+    display: none;
+}
+
+.loading-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+}
+
+.loading-content {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.loading-title {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 1rem 0;
+}
+
+.loading-content .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: var(--primary-color);
+}
+
+.loading-content .progress {
+    height: 12px;
+    background-color: var(--background-light);
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.loading-content .progress-bar {
+    background-color: var(--primary-color);
+    background-image: linear-gradient(45deg, 
+        rgba(255,255,255,.15) 25%, 
+        transparent 25%, 
+        transparent 50%, 
+        rgba(255,255,255,.15) 50%, 
+        rgba(255,255,255,.15) 75%, 
+        transparent 75%, 
+        transparent);
+    background-size: 1rem 1rem;
+}
+
+/* Animation for the progress bar stripes */
+@keyframes progress-bar-stripes {
+    from { background-position: 1rem 0; }
+    to { background-position: 0 0; }
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+/* Resource links within task cards */
+.task-details a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 0.25rem 0;
+    display: inline-block;
+}
+
+.task-details a:hover {
+    color: var(--secondary-color);
+}
+
+/* Lists within task details */
+.task-details ul {
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
+}
+
+.task-details li {
+    margin: 0.5rem 0;
+}
+
+/* Task description text */
+.task-header strong {
+    margin-right: 0.75rem;
+}
+
+/* Priority indicators */
+.priority-high {
+    border-left-color: var(--warning-color);
+}
+
+.upload-area {
+    border: 2px dashed #ccc;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+.upload-area.dragover {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+.file-preview {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+.file-preview img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    margin-right: 1rem;
+}
+
+.collapsible:hover {
+    background-color: rgba(247, 249, 252, 0.8); /* Change background on hover */
+}
+
+.arrow {
+    font-size: 1.2rem; /* Increase arrow size */
+    /* Align the arrow all the way to the right */
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.loading-content {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.loading-title {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 1rem 0;
+}
+
+.loading-content .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: var(--primary-color);
+}
+
+.loading-content .progress {
+    height: 12px;
+    background-color: var(--background-light);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.loading-content .progress-bar {
+    background-color: var(--primary-color);
+    background-image: linear-gradient(45deg, 
+        rgba(255,255,255,.15) 25%, 
+        transparent 25%, 
+        transparent 50%, 
+        rgba(255,255,255,.15) 50%, 
+        rgba(255,255,255,.15) 75%, 
+        transparent 75%, 
+        transparent);
+    background-size: 1rem 1rem;
+}
+
+/* Animation for the progress bar stripes */
+@keyframes progress-bar-stripes {
+    from { background-position: 1rem 0; }
+    to { background-position: 0 0; }
+}
+
+.progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+/* Resource links within task cards */
+.task-details a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 0.25rem 0;
+    display: inline-block;
+}
+
+.task-details a:hover {
+    color: var(--secondary-color);
+}
+
+/* Lists within task details */
+.task-details ul {
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
+}
+
+.task-details li {
+    margin: 0.5rem 0;
+}
+
+/* Task description text */
+.task-header strong {
+    margin-right: 0.75rem;
+}
+
+/* Priority indicators */
+.priority-high {
+    border-left-color: var(--warning-color);
+}
+
+.upload-area {
+    border: 2px dashed #ccc;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+.upload-area.dragover {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+.file-preview {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+.file-preview img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    margin-right: 1rem;
+}
+
+.collapsible:hover {
+    background-color: rgba(247, 249, 252, 0.8); /* Change background on hover */
+}
+
+.arrow {
+    font-size: 1.2rem; /* Increase arrow size */
+    /* Align the arrow all the way to the right */
+    margin-left: auto;
+    margin-right: 0;
+}
 </style>
+
+<!-- Add a fallback for users with JavaScript disabled -->
+<noscript>
+    <style>
+        .due-date {
+            display: none;
+        }
+    </style>
+</noscript>
 
 {% endblock content %}

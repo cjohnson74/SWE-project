@@ -4,6 +4,7 @@ from .views import HomePageView, CourseListView, AssignmentsListView, Assignment
 
 urlpatterns = [
     path("", HomePageView, name="home"),
+    path("en/", HomePageView, name="home"),
     path("courses/", CourseListView, name="courses"),
     path("courses/graph/", CoursesGraphView, name="courses_graph"),
     path("courses/<str:course_id>/assignments/", AssignmentsListView, name="course_assignments"),
@@ -13,5 +14,9 @@ urlpatterns = [
     path('files/delete/<int:file_id>/', views.delete_file, name='delete_file'), 
     path('assignment_tasks/<int:assignment_id>/', AssignmentTasksView, name='assignment_tasks'),
     path("assignments/<str:assignment_id>/", AssignmentDetailsView, name="assignment_details"),
-    path("add_deadline/", add_deadline, name="add_deadline")
+    path("add_deadline/", add_deadline, name="add_deadline"),
+    path('api/save-progress/<str:assignment_id>/', views.save_progress, name='save_progress'),
+    path('api/save-task-status/<int:task_number>/', views.save_task_status, name='save_task_status'),
+    path('assignments/<str:assignment_id>/upload-file/', views.upload_assignment_file, name='upload_assignment_file'),
+    path('assignments/<str:assignment_id>/delete-file/<int:file_id>/', views.delete_assignment_file, name='delete_assignment_file'),
 ]

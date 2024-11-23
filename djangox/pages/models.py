@@ -49,10 +49,24 @@ class Assignments(models.Model):
 
 class AssignmentBreakdown(models.Model):
     assignment = models.ForeignKey(Assignments, on_delete=models.CASCADE, related_name='assignment_breakdown')
+    initial_assessment = models.TextField(blank=True, null=True)
+    complexity_evaluation = models.TextField(blank=True, null=True)
+    complexity_scores = models.JSONField(blank=True, null=True)
+    key_requirements = models.TextField(blank=True, null=True) # List
+    potential_challenges = models.TextField(blank=True, null=True) # List
+    skill_level_considerations = models.TextField(blank=True, null=True)
     total_estimated_time = models.CharField(max_length=255)
     work_distribution = models.TextField()
     breaks_and_buffer = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    reasoning = models.TextField(blank=True, null=True)
+    progress_tracking = models.TextField(blank=True, null=True)
+    time_management = models.TextField(blank=True, null=True) # List
+    focus_impprovement = models.TextField(blank=True, null=True) # List
+    motivation_boosters = models.TextField(blank=True, null=True) # List
+    milestone_rewards = models.TextField(blank=True, null=True) # List
+    completion_reward = models.TextField(blank=True, null=True)
+    progress_visualization = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.assignment.name} - Breakdown"
@@ -66,8 +80,9 @@ class AssignmentBreakdownTask(models.Model):
     completed = models.BooleanField(default=False)
     tips = models.TextField(blank=True, null=True)
     priority = models.CharField(max_length=50)
+    potential_distractions = models.TextField(blank=True, null=True) # List
     distraction_mitigation = models.TextField(blank=True, null=True)
-    focus_techniques = models.TextField(blank=True, null=True)
+    focus_techniques = models.TextField(blank=True, null=True) # List
     reward = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -137,3 +152,38 @@ class Deadlines(models.Model):
 
     def __str__(self):
         return self.title
+
+class AssignmentFile(models.Model):
+    FILE_TYPES = [
+        ('document', 'Document'),
+        ('image', 'Image'),
+        ('other', 'Other')
+    ]
+    
+    assignment = models.ForeignKey(Assignments, on_delete=models.CASCADE, related_name='files')
+    file = models.FileField(upload_to='assignment_files/')
+    file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=100)
+    file_category = models.CharField(max_length=20, choices=FILE_TYPES, default='other')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    content = models.TextField(blank=True, null=True)  # For storing converted text content
+    thumbnail = models.ImageField(upload_to='assignment_thumbnails/', blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # Determine file category based on extension
+        ext = self.file_type.lower()
+        if ext in ['pdf', 'doc', 'docx', 'txt']:
+            self.file_category = 'document'
+        elif ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
+            self.file_category = 'image'
+        else:
+            self.file_category = 'other'
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete the actual files when model is deleted
+        if self.file:
+            self.file.delete(save=False)
+        if self.thumbnail:
+            self.thumbnail.delete(save=False)
+        super().delete(*args, **kwargs)
