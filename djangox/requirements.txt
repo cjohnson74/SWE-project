@@ -23,6 +23,7 @@ idna==3.4
 jiter==0.7.1
 oauthlib==3.2.2
 packaging==23.1
+pdf2image==1.17.0
 pillow==11.0.0
 psycopg==3.2.3
 psycopg-binary==3.2.3

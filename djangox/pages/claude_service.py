@@ -6,6 +6,8 @@ from datetime import datetime
 import json
 import logging
 import base64
+from pdf2image import convert_from_path
+from io import BytesIO
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -155,49 +157,9 @@ def get_assignment_breakdown(assignment_id):
     }]
 
     try:
-        client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
-        response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=8192,
-            temperature=0,
-            messages=messages
-        )
-
-        # Get the response text
-        response_text = response.content[0].text.strip()
-        logger.debug(f"Raw response text: {response_text[:200]}...")  # Log first 200 chars
-
-        try:
-            # First attempt: Try to parse the entire response
-            breakdown_data = json.loads(response_text)
-            return breakdown_data
-        except json.JSONDecodeError:
-            # Second attempt: Try to extract JSON object
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
-
-            if start != -1 and end != -1:
-                json_str = response_text[start:end]
-                logger.debug(f"Extracted JSON string: {json_str[:200]}...")
-                
-                # Add missing braces if necessary
-                if not json_str.startswith('{'):
-                    json_str = '{' + json_str
-                if not json_str.endswith('}'):
-                    json_str = json_str + '}'
-                
-                try:
-                    breakdown_data = json.loads(json_str)
-                    return breakdown_data
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse extracted JSON: {e}")
-                    logger.error(f"Extracted JSON string: {json_str}")
-                    raise ValueError(f"Invalid JSON format: {e}")
-            else:
-                logger.error("No JSON object found in response")
-                logger.error(f"Response text: {response_text}")
-                raise ValueError("Could not find JSON object in response")
-
+        response_text = call_claude_api(messages)
+        breakdown_data = parse_claude_response(response_text)
+        return breakdown_data
     except Exception as e:
         logger.error(f"Error getting breakdown from Claude: {str(e)}")
         raise
@@ -212,117 +174,259 @@ def fetch_assignments_by_course(course_id):
 
 def get_assignment_files_content(assignment):
     """Get the content of the assignment files."""
+    print(f"\n=== Starting processing for assignment: {assignment.name} ===")
     logger.debug(f"Processing files for assignment: {assignment.name}")
     assignment_files_content = []
     
-    for file in AssignmentFile.objects.filter(assignment=assignment):
+    try:
+        files = AssignmentFile.objects.filter(assignment=assignment)
+        print(f"Found {len(files)} files to process")
+    except Exception as e:
+        print(f"❌ ERROR: Failed to fetch files: {e}")
+        logger.error(f"Failed to fetch files for assignment {assignment.name}: {e}")
+        raise
+    
+    for file in files:
+        print(f"\n--- Processing file: {file.file_name} ---")
         logger.debug(f"Processing file: {file.file_name}")
         
-        # Determine if file is an image based on file type
-        is_image = file.file_type.lower() in ['jpg', 'jpeg', 'png', 'gif', 'bmp']
-        
-        if is_image:
-            try:
-                # Read image file and encode as base64
-                with file.file.open('rb') as img_file:
-                    image_data = base64.b64encode(img_file.read()).decode('utf-8')
-                
-                # Determine media type based on file extension
-                image_media_type = f"image/{file.file_type.lower()}"
-                if file.file_type.lower() == 'jpg':
-                    image_media_type = "image/jpeg"
-                
-                messages = [{
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": image_media_type,
-                                "data": image_data,
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": "Extract the content from this image and return it in a valid JSON object with this structure: {\"file_name\": \"filename\", \"file_content\": \"content\"}"
-                        }
-                    ]
-                },
-                {
-                    "role": "assistant",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "{"
-                        }
-                    ]
-                }
-            ]
-            except Exception as e:
-                logger.error(f"Error processing image file {file.file_name}: {str(e)}")
-                continue
-        else:
-            # Handle text-based files
-            messages = [{
-                "role": "user",
-                "content": [{
-                    "type": "text",
-                    "text": f"Return a valid JSON object in this format: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"{file.content}\"}}"
-                }]
-                },
-                {
-                    "role": "assistant",
-                    "content": [{
-                        "type": "text",
-                        "text": "{"
-                    }]
-                }
-            ]
-        
-        try:
-            client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=8192,
-                temperature=0,
-                messages=messages
-            )
-
-            response_text = response.content[0].text.strip()
-
-            # Add missing braces if necessary
-            if not response_text.startswith('{'):
-                response_text = '{' + response_text
-            if not response_text.endswith('}'):
-                response_text = response_text + '}'
-
-            try:
-                # Try to parse the entire response as JSON first
-                content_dict = json.loads(response_text)
-            except json.JSONDecodeError:
-                # If that fails, try to extract JSON from the response
-                start = response_text.find('{')
-                end = response_text.rfind('}') + 1
-                
-                if start != -1 and end != -1:
-                    json_str = response_text[start:end]
-                    try:
-                        content_dict = json.loads(json_str)
-                    except json.JSONDecodeError as e:
-                        logger.error(f"Failed to parse extracted JSON for file {file.file_name}: {e}")
-                        logger.error(f"Extracted JSON string: {json_str}")
-                        continue
-                else:
-                    logger.error(f"No JSON object found in response for file {file.file_name}")
-                    logger.error(f"Response text: {response_text}")
-                    continue
-            
-            assignment_files_content.append(content_dict)
-            logger.debug(f"Successfully processed file: {file.file_name}")
-
-        except Exception as e:
-            logger.error(f"Error processing file {file.file_name}: {str(e)}")
+        # Validate file exists and is accessible
+        if not file.file or not os.path.exists(file.file.path):
+            print(f"❌ File {file.file_name} does not exist or is not accessible")
+            logger.error(f"File {file.file_name} does not exist or is not accessible")
             continue
             
+        # Determine file type
+        try:
+            file_type = file.file_type.lower()
+            is_image = file_type in ['jpg', 'jpeg', 'png', 'gif', 'bmp']
+            is_pdf = file_type == 'pdf'
+            print(f"File type: {file_type} (Image: {is_image}, PDF: {is_pdf})")
+        except AttributeError as e:
+            print(f"❌ Failed to determine file type: {e}")
+            logger.error(f"Failed to determine file type for {file.file_name}: {e}")
+            continue
+
+        try:
+            if is_pdf:
+                print("Converting PDF to images...")
+                try:
+                    images = convert_from_path(
+                        file.file.path,
+                        dpi=300,
+                        fmt='PNG',
+                        grayscale=False
+                    )
+                    print(f"✅ Successfully converted PDF to {len(images)} images")
+                except Exception as e:
+                    print(f"❌ PDF conversion failed: {e}")
+                    logger.error(f"Failed to convert PDF {file.file_name}: {e}")
+                    continue
+
+                image_contents = []
+                for i, image in enumerate(images):
+                    print(f"Processing PDF page {i+1}/{len(images)}")
+                    try:
+                        img_byte_arr = BytesIO()
+                        image.save(img_byte_arr, format='PNG', optimize=False, quality=100)
+                        img_byte_arr = img_byte_arr.getvalue()
+                        image_data = base64.b64encode(img_byte_arr).decode('utf-8')
+                        
+                        # Call Claude API
+                        messages = messages = [{
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": "image/png",
+                                        "data": image_data,
+                                    }
+                                },
+                                {
+                                    "type": "text",
+                                    "text": f"This is page {i+1} of a PDF containing handwritten notes. Please carefully extract and transcribe all handwritten text, maintaining the original structure and layout. Return the content in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
+                                }
+                            ]
+                        },
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "{"
+                                }
+                            ]
+                        }
+                        ]
+                        print(f"Calling Claude API for page {i+1}...")
+                        response_text = call_claude_api(messages)
+                        image_contents.append(response_text)
+                        print(f"✅ Successfully processed page {i+1}")
+                        
+                    except Exception as e:
+                        print(f"❌ Failed to process page {i+1}: {e}")
+                        logger.error(f"Failed to process page {i+1} of PDF {file.file_name}: {e}")
+                        continue
+
+            elif is_image:
+                print("Processing image file...")
+                try:
+                    with file.file.open('rb') as img_file:
+                        image_data = base64.b64encode(img_file.read()).decode('utf-8')
+                    print("✅ Successfully read image file")
+                except Exception as e:
+                    print(f"❌ Failed to read image: {e}")
+                    logger.error(f"Failed to read image file {file.file_name}: {e}")
+                    continue
+
+                try:
+                    image_media_type = f"image/{file_type}"
+                    if file_type == 'jpg':
+                        image_media_type = "image/jpeg"
+                        
+                    messages = [{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": image_media_type,
+                                    "data": image_data,
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": f"Extract the content from this image and return it in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
+                            }
+                        ]
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "{"
+                            }
+                        ]
+                    }
+                    ]
+                    print("Calling Claude API for image interpretation...")
+                    response_text = call_claude_api(messages)
+                    content_dict = parse_claude_response(response_text, file.file_name)
+                    assignment_files_content.append(content_dict)
+                    print("✅ Successfully processed image")
+                    
+                except Exception as e:
+                    print(f"❌ Failed to process image: {e}")
+                    logger.error(f"Failed to process image {file.file_name}: {e}")
+                    continue
+
+            else:  # Text-based files
+                try:
+                    messages = [{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": image_media_type,
+                                    "data": image_data,
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": f"Extract the content from this image and return it in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
+                            }
+                        ]
+                    },
+                    {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "{"
+                            }
+                        ]
+                    }
+                    ]
+                    response_text = call_claude_api(messages)
+                    content_dict = parse_claude_response(response_text, file.file_name)
+                    assignment_files_content.append(content_dict)
+                except Exception as e:
+                    logger.error(f"Failed to process text file {file.file_name}: {e}")
+                    continue
+
+        except Exception as e:
+            print(f"❌ Unexpected error: {e}")
+            logger.error(f"Unexpected error processing file {file.file_name}: {e}")
+            continue
+            
+    if not assignment_files_content:
+        print("⚠️ Warning: No files were successfully processed")
+        logger.warning(f"No files were successfully processed for assignment {assignment.name}")
+    else:
+        print(f"\n✅ Successfully processed {len(assignment_files_content)} files")
+        
     return assignment_files_content
+
+def parse_claude_response(response_text, file_name=None):
+    """Helper function to parse Claude's response and extract JSON."""
+    print("Parsing Claude response...")
+    if not response_text:
+        print("❌ Empty response from Claude")
+        raise ValueError("Empty response from Claude")
+        
+    # Attempt to extract JSON object
+    if not response_text.startswith('{'):
+        response_text = "{" + response_text
+        
+    try:
+        result = json.loads(response_text)
+        print("✅ Successfully parsed response")
+        return result
+    except json.JSONDecodeError:
+        print("⚠️ Initial JSON parsing failed, attempting to extract JSON object...")
+        try:
+            start = response_text.find('{')
+            end = response_text.rfind('}') + 1
+            
+            if start == -1 or end == -1:
+                print("❌ No JSON object found in response")
+                raise ValueError("No JSON object found in response")
+                
+            json_str = response_text[start:end]
+            result = json.loads(json_str)
+            print("✅ Successfully extracted and parsed JSON")
+            return result
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"❌ Failed to parse response: {e}")
+            logger.error(f"Failed to parse response for {file_name}: {e}")
+            logger.error(f"Response text: {response_text}")
+            raise
+
+def call_claude_api(messages):
+    """Helper function to call Claude API."""
+    print("Calling Claude API...")
+    try:
+        client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=8192,
+            temperature=0,
+            messages=messages
+        )
+        print("✅ Claude API call successful")
+        return response.content[0].text.strip()
+    except anthropic.APIError as e:
+        print(f"❌ Claude API error: {e}")
+        logger.error(f"Claude API error: {e}")
+        raise
+    except Exception as e:
+        print(f"❌ Unexpected Claude API error: {e}")
+        logger.error(f"Unexpected error calling Claude API: {e}")
+        raise
