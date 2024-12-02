@@ -49,8 +49,6 @@
 <body>
     <h1>Assignment Detail</h1>
     <h2>{{ assignment.name }}</h2>
-    <p><strong>Assignment ID:</strong> {{ assignment.canvas_id }}</p>
-    <p><strong>Description:</strong></p>
     <div class="description">{{ assignment.description|safe }}</div>  <!-- Render HTML safely -->
     <p><strong>Due Date:</strong> {{ assignment.due_at }}</p>
     <p><strong>Points Possible:</strong> {{ assignment.points_possible }}</p>

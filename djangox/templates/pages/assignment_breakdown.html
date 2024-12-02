@@ -24,7 +24,7 @@
 </head>
 
 <div class="container mt-5">
-    <h1 class="text-center text-danger animate__animated animate__bounce">🎉 Assignment Breakdown 🎉</h1>
+    <h1 class="text-center text-danger animate__animated animate__bounce"> Assignment Breakdown </h1>
 
     <!-- Progress Tracker Card -->
     <div class="card my-4">
@@ -43,7 +43,7 @@
             <div class="spinner-border text-info" role="status">
                 <span class="sr-only">Loading...</span>
             </div>
-            <h2 class="mt-3">Fetching Your Breakdown... 🚀</h2>
+            <h2 class="mt-3">Fetching Your Breakdown...</h2>
             <div class="progress my-3">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" id="loadingProgress" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
@@ -53,7 +53,7 @@
     <form id="breakdownForm" method="POST" onsubmit="return submitForm(event)" action="{% url 'assignment_breakdown' assignment_id=assignment_id %}">
         {% csrf_token %}
         <div class="text-center">
-            <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Breakdown 📊</button>
+            <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Breakdown</button>
         </div>
     </form>
 
@@ -88,6 +88,9 @@
                         {% endfor %}
                     </ul>
                     <p><strong>Skill Level Considerations:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
+                    <p>
+                        <img src="https://media.giphy.com/media/800iiDTaNNFOwytONV/giphy.gif" alt="Drake and Lil Yachty">
+                    </p>
                 </div>
             </div>
         </div>
@@ -98,52 +101,59 @@
                 <h3 class="collapsible dropdown-toggle" id="breakdownDropdown" data-toggle="collapse" data-target="#breakdownContent" aria-haspopup="true" aria-expanded="false">
                     Assignment Breakdown <span class="arrow">▼</span>
                 </h3>
+
                 <div id="breakdownContent" class="collapse">
                     <p><strong>Total Estimated Time:</strong> <span id="totalEstimatedTime" class="highlight">{{ total_estimated_time }}</span></p>
                     <p><strong>Work Distribution:</strong> <span id="workDistribution" class="highlight">{{ work_distribution }}</span></p>
                     <p><strong>Breaks and Buffer:</strong> <span id="breaksAndBuffer" class="highlight">{{ breaks_and_buffer }}</span></p>
+
                     <h4>Tasks:</h4>
                     <div id="taskList" class="task-list">
                         {% for task in assignment_breakdown %}
                             <div class="task-card">
+                                <!-- Task Header -->
                                 <div class="task-header" onclick="toggleTaskDetails(this)">
                                     <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
-                                    <strong>Task {{ task.task_number }}:</strong> {{ task.description }} (Estimated Time: {{ task.estimated_time }}) - Due: {{ task.due_date|date:"F j, Y" }}
+                                    <strong>{{ task.task_number }}: </strong>
+                                    <strong>{{ task.description }} (Estimated Time: {{ task.estimated_time }})</strong>
                                 </div>
+
+                                <!-- Task Details -->
                                 <div class="task-details" style="display: none;">
-                                    <em>Tips:</em> {{ task.tips }}<br>
-                                    <em>YouTube Resources:</em> 
-                                    {% for resource in task.youtube_resources %}
-                                        <a href="{{ resource.link }}" target="_blank">{{ resource.title }}</a>{% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                    <br>
-                                    <em>Priority:</em> {{ task.priority }}<br>
-                                    <em>Potential Distractions:</em> 
-                                    {% if task.potential_distractions %}
-                                        {% if task.potential_distractions|length > 0 %}
-                                            {{ task.potential_distractions|join:', ' }}<br>
-                                        {% else %}
-                                            None<br>
-                                        {% endif %}
-                                    {% else %}
-                                        None<br>
+                                    {% if task.tips %}
+                                        <p><em>Tips:</em> {{ task.tips }}</p>
                                     {% endif %}
-                                    <em>Distraction Mitigation:</em> {{ task.distraction_mitigation }}<br>
-                                    <em>Focus Techniques:</em> 
-                                    {% if task.focus_techniques %}
-                                        {% if task.focus_techniques|length > 0 %}
-                                            {{ task.focus_techniques|join:', ' }}<br>
-                                        {% else %}
-                                            None<br>
-                                        {% endif %}
-                                    {% else %}
-                                        None<br>
+                                    {% if task.youtube_resources %}
+                                        <p>
+                                            <em>YouTube Resources:</em>
+                                            {% for resource in task.youtube_resources %}
+                                                <a href="{{ resource.link }}" target="_blank">{{ resource.title }}</a>{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </p>
                                     {% endif %}
-                                    <em>Reward:</em> {{ task.reward }}
+                                    {% if task.priority %}
+                                        <p><em>Priority:</em> {{ task.priority }}</p>
+                                    {% endif %}
+                                    <p>
+                                        <em>Potential Distractions:</em>
+                                        {{ task.potential_distractions|join:", "|default:"None" }}
+                                    </p>
+                                    {% if task.distraction_mitigation %}
+                                        <p><em>Distraction Mitigation:</em> {{ task.distraction_mitigation }}</p>
+                                    {% endif %}
+                                    <p>
+                                        <em>Focus Techniques:</em>
+                                        {{ task.focus_techniques|join:", "|default:"None" }}
+                                    </p>
+                                    {% if task.reward %}
+                                        <p><em>Reward:</em> {{ task.reward }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
+
+                    <!-- Next Task Section -->
                     <h4>Next Task to Focus On:</h4>
                     {% with next_task=None %}
                         {% for task in assignment_breakdown %}
@@ -155,7 +165,8 @@
                             {% endif %}
                         {% endfor %}
                         {% if next_task %}
-                            <p><strong>Next Task:</strong> {{ next_task.description }} (Due: {{ next_task.due_date|date:"F j, Y" }})</p>
+                            <p><strong>Next Task:</strong> {{ next_task.description }}
+                            (Due: {{ next_task.due_date|date:"F j, Y" }})</p>
                             <p><strong>Focus Mode:</strong> Prioritize this task to meet the deadline!</p>
                         {% else %}
                             <p>No upcoming tasks.</p>
@@ -164,6 +175,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- Additional Resources Card -->
         <div class="card my-4">
@@ -185,10 +197,11 @@
         <div class="card my-4">
             <div class="card-body">
                 <h3>Reasoning</h3>
+                <div>{{ reasoning}}</div>
                 {% if reasoning %}
                     <p>{{ reasoning }}</p>
                 {% else %}
-                    <p>No reasoning provided.</p>
+                    <p> No reasoning provided.</p>
                 {% endif %}
             </div>
         </div>
@@ -310,9 +323,9 @@
     function submitForm(event) {
         event.preventDefault(); // Prevent the default form submission
         showLoading(); // Show loading visual
-        
+
         const formData = new FormData(document.getElementById('breakdownForm'));
-        
+
         fetch(window.location.href, {
             method: 'POST',
             body: formData,
@@ -324,8 +337,9 @@
             return response.json(); // Expecting JSON response
         })
         .then(data => {
-            console.log("Response Data:", data); // Log the data for debugging
-            
+            console.log("Response Data:", data);
+            console.log("reasoning: ", data.reasoning);
+
             const breakdownResultsElement = document.getElementById('breakdownResults');
             const noBreakdownMessage = document.getElementById('noBreakdownMessage');
 
@@ -395,9 +409,10 @@
                     taskCard.innerHTML = `
                         <div class="task-header" onclick="toggleTaskDetails(this)">
                             <input type="checkbox" class="task-checkbox" onchange="updateProgress()" {% if task.completed %}checked{% endif %}>
-                            <strong>Task ${task.task_number}:</strong> ${task.description} (Estimated Time: ${task.estimated_time}) - Due: ${new Date(task.due_date).toLocaleString()}
+                            <strong>Task ${task.task_number}: </strong> ${task.description}
                         </div>
                         <div class="task-details" style="display: none;">
+                            <em>(Estimated Time:</em> ${task.estimated_time})<br>
                             <em>Tips:</em> ${task.tips}<br>
                             <em>YouTube Resources:</em> ${task.youtube_resources.map(resource => `<a href="${resource.link}" target="_blank">${resource.title}</a>`).join(', ')}
                             <br>
@@ -459,7 +474,7 @@
     function getBorderColor(estimatedTime) {
         const timeRange = estimatedTime.split('-').map(t => parseInt(t));
         const averageTime = (timeRange.length === 2) ? (timeRange[0] + timeRange[1]) / 2 : timeRange[0];
-        
+
         if (averageTime <= 30) return '#2ecc71'; // Green for short tasks
         if (averageTime <= 60) return '#f1c40f'; // Yellow for medium tasks
         return '#e74c3c'; // Red for long tasks
@@ -468,7 +483,7 @@
 
 <style>
     body {
-        font-family: 'Comic Sans MS', cursive, sans-serif; /* Fun font */
+        font-family: Arial, sans-serif;
         background-color: #f9f9f9; /* Light background */
         color: #333; /* Dark text for contrast */
         margin: 0;

@@ -7,62 +7,179 @@
 {% if user.is_authenticated %}
 <div class="dashboard-container container py-5">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Your Dashboard</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-            }
-            .dashboard-title {
-                text-align: center;
-                margin-bottom: 40px;
-                font-size: 2rem;
-            }
-            .course-card {
-                border: 1px solid #ddd;
-                padding: 20px;
-                text-align: center;
-                transition: transform 0.2s ease;
-                border-radius: 8px;
-                background-color: #f9f9f9;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                cursor: pointer;
-            }
-            .course-card:hover {
-                background-color: #f1f1f1;
-                transform: translateY(-5px);
-            }
-            .course-card h3 {
-                margin: 0;
-                font-size: 1.5rem;
-            }
-            .course-card p {
-                margin: 10px 0 0;
-                color: #666;
-            }
-        </style>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Smart Agenda for College Students</title>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+      <style>
+        body {
+          margin: 0;
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          background: #f3f4f6;
+          color: #333;
+        }
+
+        /* Hero Section */
+        .hero {
+          background: linear-gradient(to right, #6a11cb, #2575fc);
+          color: #fff;
+          padding: 3rem 2rem;
+          text-align: center;
+        }
+
+        .hero h1 {
+          font-family: 'Poppins', sans-serif;
+          font-size: 2.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .hero p {
+          font-size: 1.2rem;
+          margin-bottom: 2rem;
+        }
+
+        .hero .cta {
+          padding: 0.8rem 1.5rem;
+          background: #fff;
+          color: #2575fc;
+          font-size: 1rem;
+          font-weight: bold;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          text-transform: uppercase;
+        }
+
+        .hero .cta:hover {
+          background: #d4d4d4;
+        }
+
+        /* Features Section */
+        .features {
+          padding: 2rem;
+          background: #fff;
+        }
+
+        .features h2 {
+          text-align: center;
+          font-family: 'Poppins', sans-serif;
+          margin-bottom: 1rem;
+          color: #2575fc;
+        }
+
+        .features .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .features .grid-item {
+          background: #f9f9f9;
+          padding: 1.5rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          text-align: center;
+        }
+
+        .features .grid-item h3 {
+          font-size: 1.2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        /* Testimonials Section */
+        .testimonials {
+          background: #f3f4f6;
+          padding: 2rem;
+        }
+
+        .testimonials h2 {
+          text-align: center;
+          font-family: 'Poppins', sans-serif;
+          margin-bottom: 1rem;
+          color: #6a11cb;
+        }
+
+        .testimonials .testimonial {
+          max-width: 600px;
+          margin: 1rem auto;
+          background: #fff;
+          padding: 1.5rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          text-align: left;
+        }
+
+        .testimonials .testimonial p {
+          font-style: italic;
+          margin-bottom: 0.5rem;
+        }
+
+        .testimonials .testimonial .author {
+          text-align: right;
+          font-weight: bold;
+          color: #2575fc;
+        }
+
+        /* Footer */
+        .footer {
+          text-align: center;
+          padding: 1rem;
+          background: #2575fc;
+          color: #fff;
+        }
+
+        .footer a {
+          color: #fff;
+          margin: 0 0.5rem;
+          text-decoration: none;
+        }
+
+        .footer a:hover {
+          text-decoration: underline;
+        }
+      </style>
     </head>
     <body>
-        <h1 class="dashboard-title">Your Dashboard</h1>
-        <div class="row">
-            {% for course in courses %}
-            <div class="col-md-4 mb-4">
-                <a href="{% url 'course_assignments' course.course_id %}" class="text-decoration-none text-dark">
-                    <div class="course-card">
-                        <h3>{{ course.name }}</h3>
-                        <p>Course ID: {{ course.course_id }}</p>
-                        <p>Course Code: {{ course.course_code }}</p>
-                        <p><strong>View Assignments</strong></p>
-                    </div>
-                </a>
-            </div>
-            {% empty %}
-            <div class="col-12 text-center">
-                <p class="no-courses">Login to view your courses.</p>
-            </div>
-            {% endfor %}
+      <!-- Hero Section -->
+      <section class="hero">
+        <h1>Smart Agenda for ADHD Students</h1>
+        <p>Organize your life with ease and stay on top of your studies effortlessly.</p>
+        <button class="cta">Get Started Now</button>
+      </section>
+
+      <!-- Features Section -->
+      <section class="features">
+        <h2>Features That Work for You</h2>
+        <div class="grid">
+          <div class="grid-item">
+            <h3>Requirement Listings</h3>
+            <p>Lists requirements for specific assignments.</p>
+          </div>
+          <div class="grid-item">
+            <h3>Task breakdowns</h3>
+            <p>Gives comprehensive breakdowns of assignments.</p>
+          </div>
+          <div class="grid-item">
+            <h3>Time and Effort Estimates</h3>
+            <p>Estimates the complexity and time for specific assignments.</p>
+          </div>
         </div>
+      </section>
+
+      <!-- Testimonials Section -->
+      <section class="testimonials">
+        <h2>What Students Are Saying</h2>
+        <div class="testimonial">
+          <p>"This website changed my life! I finally feel in control of my studies."</p>
+          <p class="author">- Emily R., Psychology Major</p>
+        </div>
+        <div class="testimonial">
+          <p>"The task breakdowns help me stay productive and stress-free."</p>
+          <p class="author">- Jake T., Engineering Student</p>
+        </div>
+      </section>
+
     </body>
 </div>
 {% else %}

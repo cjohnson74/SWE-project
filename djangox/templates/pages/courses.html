@@ -1,74 +1,161 @@
 {% extends '_base.html' %}
+{% load static %}
 
-{% block title %}Courses{% endblock %}
+{% block title %}Your Dashboard{% endblock title %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courses</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0 auto;
-        }
-        th, td {
-            padding: 15px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-        .no-courses {
-            text-align: center;
-            font-style: italic;
-            color: #888;
-        }
-    </style>
-</head>
-<body>
-    <h1>Courses</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Course ID</th>
-                <th>Name</th>
-                <th>Course Code</th>
-                <th>Assignments</th>
-            </tr>
-        </thead>
-        <tbody>
+{% if user.is_authenticated %}
+<div class="dashboard-container container py-5">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Dashboard</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+
+            .dashboard-title {
+                text-align: center;
+                margin-bottom: 40px;
+                font-size: 2rem;
+            }
+
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .col-md-4 {
+                display: flex;
+                justify-content: center;
+            }
+
+            .course-card {
+                width: 100%;
+                max-width: 300px;
+                height: 200px;
+                border: 1px solid #ddd;
+                padding: 20px;
+                text-align: center;
+                transition: transform 0.2s ease, background-color 0.3s ease;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .course-card:hover {
+                background-color: #bfd8e5;
+                transform: translateY(-5px);
+            }
+
+            /* Apply unique hover colors based on position */
+            .row .col-md-4:nth-child(2) .course-card:hover {
+                background-color: #ffbfbd;
+            }
+
+            .row .col-md-4:nth-child(3) .course-card:hover {
+                background-color: #c7ffae;
+            }
+
+            .row .col-md-4:nth-child(4) .course-card:hover {
+                background-color: #fff3cd; /* Light yellow */
+            }
+
+            .course-card h3 {
+                margin: 0;
+                font-size: 1.5rem;
+            }
+
+            .course-card p {
+                margin: 10px 0 0;
+                color: #666;
+            }
+
+            .upload-section {
+                margin-top: 50px;
+                padding: 20px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            .upload-section h2 {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+            }
+
+            .upload-section form {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .upload-section input[type="file"] {
+                margin-bottom: 20px;
+            }
+
+            .upload-section button {
+                background-color: #007bff;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            .upload-section button:hover {
+                background-color: #0056b3;
+            }
+
+            .no-courses {
+                margin-top: 20px;
+                font-size: 1.2rem;
+                color: #888;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="dashboard-title">Your Dashboard</h1>
+        <div class="row">
             {% for course in courses %}
-            <tr>
-                <td>{{ course.course_id }}</td>
-                <td>{{ course.name }}</td>
-                <td>{{ course.course_code }}</td>
-                <td><a href="{% url 'course_assignments' course.course_id %}">View Assignments</a></td>
-            </tr>
+            <div class="col-md-4 mb-4">
+                <a href="{% url 'course_assignments' course.course_id %}" class="text-decoration-none text-dark">
+                    <div class="course-card">
+                        <h3>{{ course.name }}</h3>
+                        <p>Course Code: {{ course.course_code }}</p>
+                    </div>
+                </a>
+            </div>
             {% empty %}
-            <tr>
-                <td colspan="4" class="no-courses">No courses available.</td>
-            </tr>
+            <div class="col-12 text-center">
+                <p class="no-courses">Login to view your courses.</p>
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
-</body>
-<a href="{% url 'upload_file' %}">Upload File</a>
-</html>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2>Upload Your File</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="uploaded_file" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+    </body>
+</div>
+{% else %}
+<div class="text-center">
+    <p>Not authorized</p>
+</div>
+{% endif %}
 {% endblock content %}
