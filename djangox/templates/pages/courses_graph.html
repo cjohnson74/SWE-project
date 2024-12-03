@@ -28,18 +28,19 @@
             height: 100%;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         /* Sidebar styles */
         .instructions, .legend {
-            background: white;
-            padding: 15px;
+            background: #f9f9f9; /* Light background for contrast */
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
 
+        /* Media queries for responsiveness */
         @media (max-width: 768px) {
             .instructions, .legend {
                 position: static !important;
@@ -97,7 +98,7 @@
             background-color: #ffffff !important; /* Solid white background */
             border: 2px solid #dfe6e9 !important; /* Light gray border */
             border-radius: 8px; /* Rounded corners */
-            padding: 8px 12px; /* Reduced padding for less height */
+            padding: 10px; /* Consistent padding */
             font-size: 14px; /* Font size */
             line-height: 1.4; /* Line height for readability */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
@@ -141,12 +142,14 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
+        /* Legend item styling */
         .legend-item {
             display: flex;
             align-items: center;
             margin: 8px 0;
         }
 
+        /* Legend color circle */
         .legend-color {
             width: 20px;
             height: 20px;
@@ -306,6 +309,22 @@
                     <div class="legend-color" style="background: #78e08f;"></div>
                     <span>Task</span>
                 </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27ae60;"></div>
+                    <span>Completed Assignment</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Overdue Assignment</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Completed Task</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff7675;"></div>
+                    <span>Overdue Task</span>
+                </div>
             </div>
         </div>
     </div>
@@ -356,31 +375,30 @@
         console.log(height);
 
         // Calculate the center positions for the bubbles
-        const bubbleRadius = 40; // Radius of the bubble
-        const centerX = width / 2; // Center X position
-        const centerY = height / 2; // Center Y position
+        const bubbleRadius = 40;
+        const centerX = width / 2;
+        const centerY = height / 2;
 
         // Define scales for x and y positions
         const xScale = d3.scaleLinear()
-            .domain([0, width]) // Adjust domain based on your data
-            .range([0, width]); // Map to the width of the SVG
-
+            .domain([0, width])
+            .range([0, width]);
         const yScale = d3.scaleLinear()
-            .domain([0, height]) // Adjust domain based on your data
-            .range([height, 0]); // Invert y-axis for SVG
+            .domain([0, height])
+            .range([height, 0]);
 
         // Define the drag behavior
         const drag = d3.drag()
-            .on("start", dragstarted) // Called when drag starts
-            .on("drag", dragged)       // Called during dragging
-            .on("end", dragended);     // Called when drag ends
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended);
 
         function dragstarted(event, d) {
-            d3.select(this).raise().classed("active", true); // Bring the dragged bubble to the front
+            d3.select(this).raise().classed("active", true);
         }
 
         function dragged(event, d) {
-            // Update the position of the course node
+            // Update the position of the dragged course
             d.x = event.x;
             d.y = event.y;
 
@@ -392,8 +410,8 @@
             // Update label position if this is a course
             if (d.label) {
                 // Calculate the new position for the label
-                const labelOffsetX = 259; // Adjust this value if needed
-                const labelOffsetY =152; // Adjust this value if needed
+                const labelOffsetX = 259;
+                const labelOffsetY = 152;
                 d.label.style.left = `${d.x + labelOffsetX}px`;
                 d.label.style.top = `${d.y + labelOffsetY}px`;
             }
@@ -403,14 +421,13 @@
                 if (d.visibleAssignments) {
                     d.visibleAssignments.forEach(assignment => {
                         // Calculate the new position for each assignment
-                        // maintaining the same relative distance from the course
                         const dx = assignment.x - assignment.sourceCourse.x;
                         const dy = assignment.y - assignment.sourceCourse.y;
-                        
+
                         // Update assignment position
                         assignment.x = d.x + dx;
                         assignment.y = d.y + dy;
-                        
+
                         // Update the visual position of the assignment
                         d3.select(`circle.assignment[data-id="${assignment.id}"]`)
                             .attr("cx", assignment.x)
@@ -418,9 +435,9 @@
 
                         // Update the link
                         d3.select(assignment.link)
-                            .attr("x1", d.x)
-                            .attr("y1", d.y)
-                            .attr("x2", assignment.x)
+                            .attr("x1", d.x) // Update the start of the link to the new position of the assignment
+                            .attr("y1", d.y) // Update the start of the link to the new position of the assignment
+                            .attr("x2", assignment.x) // Keep the end of the link at the assignment's position
                             .attr("y2", assignment.y);
                     });
 
@@ -435,6 +452,14 @@
                     .attr("y1", d.sourceCourse.y)
                     .attr("x2", d.x)
                     .attr("y2", d.y);
+                console.log("Updated link for assignment", d);
+
+                if (d.visibleTasks) {
+                    d3.select(d.visibleTasks[0].link)
+                        .attr("x1", d.x)
+                        .attr("y1", d.y);
+                }
+                
             } else if (d3.select(this).classed("task")) {
                 // Update the link coming TO this task
                 d3.select(d.link)
@@ -454,7 +479,22 @@
         }
 
         function dragended(event, d) {
-            d3.select(this).classed("active", false); // Remove the active class
+            // If the simulation is running, stop it
+            if (!event.active) simulation.alphaTarget(0);
+
+            // Reposition assignments around the course
+            if (d.visibleAssignments) {
+                const radius = 80; // Adjust the radius as needed
+                d.visibleAssignments.forEach((assignment, i) => {
+                    const angle = (i / d.visibleAssignments.length) * 2 * Math.PI; // Evenly distribute assignments
+                    assignment.x = d.x + radius * Math.cos(angle);
+                    assignment.y = d.y + radius * Math.sin(angle);
+                });
+            }
+
+            // Restart the simulation to apply the new positions
+            simulation.nodes(courses.concat(d.visibleAssignments)); // Ensure all nodes are included
+            simulation.alpha(0.3).restart();
         }
 
         // Add this right after your SVG creation to create a group for links that will always be behind nodes
