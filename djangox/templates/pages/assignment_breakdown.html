@@ -73,12 +73,12 @@
                 </div>
                 <h2 class="loading-title mb-4">🤔 Analyzing assignment...</h2>
                 <div class="progress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         id="loadingProgress" 
-                         role="progressbar" 
-                         style="width: 0%;" 
-                         aria-valuenow="0" 
-                         aria-valuemin="0" 
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         id="loadingProgress"
+                         role="progressbar"
+                         style="width: 0%;"
+                         aria-valuenow="0"
+                         aria-valuemin="0"
                          aria-valuemax="100">
                     </div>
                 </div>
@@ -91,7 +91,7 @@
         {% csrf_token %}
         <div class="text-center">
 
-            
+
 
             <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Started 🎯</button>
 
@@ -104,24 +104,24 @@
             </h3>
             <div id="fileUploadContent" class="collapse">
                 <!-- File Upload Form -->
-                <form method="post" enctype="multipart/form-data" 
-                      action="{% url 'upload_assignment_file' assignment.assignment_id %}" 
+                <form method="post" enctype="multipart/form-data"
+                      action="{% url 'upload_assignment_file' assignment.assignment_id %}"
                       class="mb-4" id="fileUploadForm">
                     {% csrf_token %}
-                    <div class="upload-area p-4 border rounded mb-3" 
-                         id="dropZone" 
-                         ondrop="handleDrop(event)" 
+                    <div class="upload-area p-4 border rounded mb-3"
+                         id="dropZone"
+                         ondrop="handleDrop(event)"
                          ondragover="handleDragOver(event)"
                          ondragleave="handleDragLeave(event)">
                         <div class="text-center">
                             <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
                             <p>Drag and drop files here or</p>
-                            <input type="file" name="files" multiple 
-                                   class="form-control" 
-                                   accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp" 
+                            <input type="file" name="files" multiple
+                                   class="form-control"
+                                   accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp"
                                    id="fileInput"
                                    style="display: none;">
-                            <button type="button" class="btn btn-outline-primary" 
+                            <button type="button" class="btn btn-outline-primary"
                                     onclick="document.getElementById('fileInput').click()">
                                 Browse Files
                             </button>
@@ -218,7 +218,7 @@
                         {% endfor %}
                     </ul>
 
-                    
+
 
                     <p><strong>💪 Skill Tips:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
                 </div>
@@ -234,7 +234,7 @@
 
                 <div id="breakdownContent" class="collapse">
 
-                    
+
 
                     <p><strong>⏱️ Time Needed:</strong> <span id="totalEstimatedTime" class="highlight">{{ breakdown.total_estimated_time }}</span></p>
                     <p><strong>📅 Work Plan:</strong> <span id="workDistribution" class="highlight">{{ breakdown.work_distribution }}</span></p>
@@ -246,9 +246,9 @@
                                 <div class="task-header" onclick="toggleTaskDetails(this)">
                                     <div class="task-main-content">
                                         <div class="checkbox-wrapper">
-                                            <input type="checkbox" 
-                                                   class="task-checkbox" 
-                                                   onchange="updateProgress()" 
+                                            <input type="checkbox"
+                                                   class="task-checkbox"
+                                                   onchange="updateProgress()"
                                                    data-task-number="{{ task.task_number }}"
                                                    {% if task.completed %}checked{% endif %}>
                                         </div>
@@ -265,7 +265,7 @@
                                         </span>
                                         {% if task.due_date %}
                                         <span class="meta-item due-date" data-date="{{ task.due_date }}">
-                                            <i class="far fa-calendar-alt"></i> 
+                                            <i class="far fa-calendar-alt"></i>
                                             {{ task.due_date|date:"l, F j, Y" }}
                                         </span>
                                         {% endif %}
@@ -281,7 +281,7 @@
                                 <!-- Task Details -->
                                 <div class="task-details" style="display: none;">
 
-                                    
+
 
                                     <div class="details-grid">
                                         {% if task.tips %}
@@ -301,8 +301,8 @@
                                                 {% if task.youtube_resources %}
                                                 <div class="list-group">
                                                     {% for resource in task.youtube_resources %}
-                                                        <a href="{{ resource.link }}" 
-                                                            target="_blank" 
+                                                        <a href="{{ resource.link }}"
+                                                            target="_blank"
                                                             class="list-group-item list-group-item-action">
                                                             <i class="fas fa-play-circle"></i> {{ resource.title }}
                                                         </a>
@@ -327,7 +327,7 @@
         <!-- Next Task Card -->
         <div class="card my-4">
             <div class="card-body">
-                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#nextTaskContent">
+                <h3 class="collapsible dropdown-toggle" data-toggle="collapse" data-target="#nextTaskContent"></h3>
                     ⭐ Next Task to Focus On
                 </h3>
                 <div id="nextTaskContent" class="collapse show">
@@ -335,7 +335,7 @@
                         <div class="task-card priority-high animate__animated animate__fadeIn">
                             <div class="task-header">
                                 <h4 class="mb-3">
-                                    <i class="fas fa-star text-warning"></i> 
+                                    <i class="fas fa-star text-warning"></i>
                                     Task {{ next_task.task_number }}: {{ next_task.description }}
                                 </h4>
                             </div>
@@ -354,14 +354,14 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                
+
                                 {% if next_task.youtube_resources %}
                                     <div class="resources mt-3">
                                         <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
                                         <div class="list-group">
                                             {% for resource in next_task.youtube_resources %}
-                                                <a href="{{ resource.link }}" 
-                                                   target="_blank" 
+                                                <a href="{{ resource.link }}"
+                                                   target="_blank"
                                                    class="list-group-item list-group-item-action">
                                                     <i class="fas fa-play-circle"></i> {{ resource.title }}
                                                 </a>
@@ -369,7 +369,7 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                            
+
                             </div>
                         </div>
                     {% else %}
@@ -472,7 +472,7 @@ const hasExistingBreakdown = {{ has_existing_breakdown|lower|default:'false' }};
 
 function debugLog(message, data = null) {
     if (!DEBUG) return;
-    
+
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] ${message}`);
     if (data) {
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Define updateTaskProgress before using it
 function updateTaskProgress() {
     debugLog('Updating task progress');
-    
+
     const checkboxes = document.querySelectorAll('.task-checkbox');
     let completedCount = 0;
     const totalCount = checkboxes.length;
@@ -519,7 +519,7 @@ function updateTaskProgress() {
         total: totalCount,
         percentage: progressPercentage
     });
-    
+
     // Update progress bar
     const progressBar = document.getElementById('progressFill');
     progressBar.style.width = `${progressPercentage}%`;
@@ -542,12 +542,12 @@ function updateTaskProgress() {
 
 function createTaskCard(task) {
     // Convert arrays to lists if they're strings
-    const distractions = typeof task.potential_distractions === 'string' ? 
-        task.potential_distractions.split(',').filter(Boolean) : 
+    const distractions = typeof task.potential_distractions === 'string' ?
+        task.potential_distractions.split(',').filter(Boolean) :
         task.potential_distractions || [];
-    
-    const focusTechniques = typeof task.focus_techniques === 'string' ? 
-        task.focus_techniques.split(',').filter(Boolean) : 
+
+    const focusTechniques = typeof task.focus_techniques === 'string' ?
+        task.focus_techniques.split(',').filter(Boolean) :
         task.focus_techniques || [];
 
     return `
@@ -555,9 +555,9 @@ function createTaskCard(task) {
             <div class="task-header" onclick="toggleTaskDetails(this)">
                 <div class="task-main-content">
                     <div class="checkbox-wrapper">
-                        <input type="checkbox" 
-                               class="task-checkbox" 
-                               onchange="updateProgress()" 
+                        <input type="checkbox"
+                               class="task-checkbox"
+                               onchange="updateProgress()"
                                data-task-number="${task.task_number}"
                                ${task.completed ? 'checked' : ''}>
                     </div>
@@ -574,7 +574,7 @@ function createTaskCard(task) {
                     </span>
                     ${task.due_date ? `
                         <span class="meta-item due-date" data-date="${task.due_date}">
-                            <i class="far fa-calendar-alt"></i> 
+                            <i class="far fa-calendar-alt"></i>
                             ${new Date(task.due_date).toLocaleString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
@@ -603,7 +603,7 @@ function createTaskCard(task) {
                             <p>${task.tips}</p>
                         </div>
                     ` : ''}
-                    
+
                     ${distractions.length > 0 ? `
                         <div class="detail-section distractions-section">
                             <div class="section-header">
@@ -650,7 +650,7 @@ function createTaskCard(task) {
                             <p>${task.reward}</p>
                         </div>
                     ` : ''}
-                    
+
                     ${task.youtube_resources && task.youtube_resources.length > 0 ? `
                         <div class="detail-section video-section">
                             <div class="section-header">
@@ -660,8 +660,8 @@ function createTaskCard(task) {
                             <div class="video-grid">
                                 ${task.youtube_resources.map(resource => `
                                     <div class="video-card">
-                                        <a href="${resource.link}" 
-                                           target="_blank" 
+                                        <a href="${resource.link}"
+                                           target="_blank"
                                            rel="noopener noreferrer"
                                            class="video-link">
                                             <div class="video-thumbnail">
@@ -703,7 +703,7 @@ function simulateProgress() {
     let currentStep = 0;
     const progressBar = document.getElementById('loadingProgress');
     const loadingTitle = document.querySelector('.loading-title');
-    
+
     if (!progressBar || !loadingTitle) {
         console.error('Progress elements not found:', { progressBar, loadingTitle });
         return;
@@ -716,11 +716,11 @@ function simulateProgress() {
 
     function animateToPercent(fromPercent, toPercent, duration) {
         const startTime = performance.now();
-        
+
         function update(currentTime) {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             const currentPercent = fromPercent + (toPercent - fromPercent) * progress;
             progressBar.style.width = `${currentPercent}%`;
             progressBar.setAttribute('aria-valuenow', Math.round(currentPercent));
@@ -743,7 +743,7 @@ function simulateProgress() {
 
         // Update message
         loadingTitle.textContent = LOADING_CONFIG.STEPS[currentStep].message;
-        
+
         // Animate progress bar to next percentage
         animateToPercent(currentPercent, targetPercent, stepDuration);
 
@@ -871,7 +871,7 @@ async function submitForm(event) {
             // if (loadingElement && resultsElement) {
             //     loadingElement.style.display = 'none';
             //     resultsElement.style.display = 'block';
-                
+
             // }
 
             // Update the task list and next task
@@ -913,7 +913,7 @@ document.addEventListener('visibilitychange', () => {
 function updateNextTask(tasks) {
     const nextIncompleteTask = tasks.find(task => !task.completed);
     const nextTaskContent = document.getElementById('nextTaskContent');
-    
+
     if (!nextTaskContent) return;
 
     if (nextIncompleteTask) {
@@ -921,7 +921,7 @@ function updateNextTask(tasks) {
             <div class="task-card priority-high animate__animated animate__fadeIn">
                 <div class="task-header">
                     <h4 class="mb-3">
-                        <i class="fas fa-star text-warning"></i> 
+                        <i class="fas fa-star text-warning"></i>
                         Task ${nextIncompleteTask.task_number }: ${nextIncompleteTask.description}
                     </h4>
                 </div>
@@ -948,14 +948,14 @@ function updateNextTask(tasks) {
                             ` : ''}
                         </div>
                     </div>
-                    
+
                     ${nextIncompleteTask.youtube_resources && nextIncompleteTask.youtube_resources.length > 0 ? `
                         <div class="resources mt-3">
                             <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
                             <div class="list-group">
                                 ${nextIncompleteTask.youtube_resources.map(resource => `
-                                    <a href="${resource.link}" 
-                                       target="_blank" 
+                                    <a href="${resource.link}"
+                                       target="_blank"
                                        class="list-group-item list-group-item-action">
                                         <i class="fas fa-play-circle"></i> ${resource.title}
                                     </a>
@@ -995,7 +995,7 @@ function getTaskDataFromElement(taskCard) {
 document.addEventListener('DOMContentLoaded', function() {
     debugLog('Page loaded, initializing...');
     debugLog('Has existing breakdown:', hasExistingBreakdown);
-    
+
     if (hasExistingBreakdown) {
         debugLog('Showing existing breakdown');
         document.getElementById('breakdownResults').style.display = 'block';
@@ -1050,7 +1050,7 @@ function toggleTaskDetails(header) {
 function getBorderColor(estimatedTime) {
     const timeRange = estimatedTime.split('-').map(t => parseInt(t));
     const averageTime = (timeRange.length === 2) ? (timeRange[0] + timeRange[1]) / 2 : timeRange[0];
-    
+
     if (averageTime <= 30) return '#2ecc71'; // Green for short tasks
     if (averageTime <= 60) return '#f1c40f'; // Yellow for medium tasks
     return '#e74c3c'; // Red for long tasks
@@ -1074,7 +1074,7 @@ function findNextIncompleteTask() {
 
 function updateNextTaskDisplay(nextTask) {
     const nextTaskSection = document.querySelector('.next-task-card');
-    
+
     if (!nextTask) {
         // If no next task, hide or update the section accordingly
         if (nextTaskSection) {
@@ -1083,7 +1083,7 @@ function updateNextTaskDisplay(nextTask) {
                 <div class="card">
                     <div class="card-body">
                         <p class="card-text text-success">
-                            
+
             `;
         }
     } else {
@@ -1092,7 +1092,7 @@ function updateNextTaskDisplay(nextTask) {
             <div class="task-card priority-high animate__animated animate__fadeIn">
                 <div class="task-header">
                     <h4 class="mb-3">
-                        <i class="fas fa-star text-warning"></i> 
+                        <i class="fas fa-star text-warning"></i>
                         Task ${nextTask.taskNumber}: ${nextTask.description}
                     </h4>
                 </div>
@@ -1109,7 +1109,7 @@ function updateNextTaskDisplay(nextTask) {
                             </div>` : ''}
                         </div>
                     </div>
-                    
+
                     ${nextTask.youtubeResources ? `<div class="resources mt-3">
                         <h5><i class="fab fa-youtube text-danger"></i> Helpful Resources:</h5>
                         <div class="list-group">
@@ -1118,7 +1118,7 @@ function updateNextTaskDisplay(nextTask) {
                             </a>`).join('')}
                         </div>
                     </div>` : ''}
-                
+
                 </div>
             </div>
         `;
@@ -1170,7 +1170,7 @@ async function markTaskComplete(taskNumber) {
     const checkbox = document.querySelector(`.task-checkbox[data-task-number="${taskNumber}"]`);
     if (checkbox) {
         checkbox.checked = true;
-        
+
         try {
             // Get assignment ID from URL
             const assignmentId = getAssignmentIdFromUrl();
@@ -1197,7 +1197,7 @@ async function markTaskComplete(taskNumber) {
 
             // Update progress only if save was successful
             updateProgress();
-            
+
             // Add visual feedback
             const taskCard = checkbox.closest('.task-card');
             if (taskCard) {
@@ -1218,7 +1218,7 @@ document.querySelectorAll('.task-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', async function(event) {
         const taskNumber = this.dataset.taskNumber;
         const isCompleted = this.checked;
-        
+
         try {
             // Get assignment ID from URL
             const assignmentId = getAssignmentIdFromUrl();
@@ -1243,7 +1243,7 @@ document.querySelectorAll('.task-checkbox').forEach(checkbox => {
             }
 
             updateProgress();
-            
+
             // Add visual feedback
             const taskCard = this.closest('.task-card');
             if (taskCard) {
@@ -1296,7 +1296,7 @@ function updateTaskList(tasks) {
     }
 
     taskList.innerHTML = tasks.map(task => createTaskCard(task)).join('');
-    
+
     // Add event listeners to new checkboxes
     taskList.querySelectorAll('.task-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
@@ -1388,7 +1388,7 @@ async function updateProgress() {
         });
 
         const data = await response.json();
-        
+
         if (data.status === 'success') {
             // Show confetti for 100% completion
             if (completedCount === totalCount) {
@@ -1410,7 +1410,7 @@ async function updateProgress() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initial progress update
     updateProgress();
-    
+
     // Add event listeners to checkboxes
     document.querySelectorAll('.task-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', updateProgress);
@@ -1420,7 +1420,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const dt = e.dataTransfer;
     const files = dt.files;
     handleFiles(files);
@@ -1452,11 +1452,11 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 function updateFileList(files) {
     const fileList = document.getElementById('fileList');
     fileList.innerHTML = '';
-    
+
     for (let file of files) {
         const div = document.createElement('div');
         div.className = 'file-preview';
-        
+
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
@@ -1466,7 +1466,7 @@ function updateFileList(files) {
             icon.className = 'fas fa-file fa-2x mr-3';
             div.appendChild(icon);
         }
-                        
+
         div.appendChild(document.createTextNode(file.name));
         fileList.appendChild(div);
     }
@@ -1475,13 +1475,13 @@ function updateFileList(files) {
 // Handle form submission
 document.getElementById('fileUploadForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(this);
     const progressBar = document.querySelector('.progress');
     const progressBarFill = progressBar.querySelector('.progress-bar');
-    
+
     progressBar.style.display = 'block';
-    
+
     fetch(this.action, {
         method: 'POST',
         body: formData,
@@ -1551,13 +1551,13 @@ function showAlert(type, message) {
             <span aria-hidden="true">&times;</span>
         </button>
     `;
-    
+
     // Insert the alert at the top of the file list
     const fileList = document.querySelector('.file-list');
     if (fileList) {
         fileList.insertBefore(alertDiv, fileList.firstChild);
     }
-    
+
     // Auto-dismiss after 3 seconds
     setTimeout(() => {
         alertDiv.remove();
@@ -1656,13 +1656,13 @@ h1.text-center.text-danger {
 
 .loading-content .progress-bar {
     background-color: var(--primary-color);
-    background-image: linear-gradient(45deg, 
-        rgba(255,255,255,.15) 25%, 
-        transparent 25%, 
-        transparent 50%, 
-        rgba(255,255,255,.15) 50%, 
-        rgba(255,255,255,.15) 75%, 
-        transparent 75%, 
+    background-image: linear-gradient(45deg,
+        rgba(255,255,255,.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,.15) 50%,
+        rgba(255,255,255,.15) 75%,
+        transparent 75%,
         transparent);
 }
 
@@ -1890,13 +1890,13 @@ h1.text-center.text-danger {
 
 .loading-content .progress-bar {
     background-color: var(--primary-color);
-    background-image: linear-gradient(45deg, 
-        rgba(255,255,255,.15) 25%, 
-        transparent 25%, 
-        transparent 50%, 
-        rgba(255,255,255,.15) 50%, 
-        rgba(255,255,255,.15) 75%, 
-        transparent 75%, 
+    background-image: linear-gradient(45deg,
+        rgba(255,255,255,.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,.15) 50%,
+        rgba(255,255,255,.15) 75%,
+        transparent 75%,
         transparent);
     background-size: 1rem 1rem;
 }
@@ -2011,13 +2011,13 @@ h1.text-center.text-danger {
 
 .loading-content .progress-bar {
     background-color: var(--primary-color);
-    background-image: linear-gradient(45deg, 
-        rgba(255,255,255,.15) 25%, 
-        transparent 25%, 
-        transparent 50%, 
-        rgba(255,255,255,.15) 50%, 
-        rgba(255,255,255,.15) 75%, 
-        transparent 75%, 
+    background-image: linear-gradient(45deg,
+        rgba(255,255,255,.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,.15) 50%,
+        rgba(255,255,255,.15) 75%,
+        transparent 75%,
         transparent);
     background-size: 1rem 1rem;
 }
