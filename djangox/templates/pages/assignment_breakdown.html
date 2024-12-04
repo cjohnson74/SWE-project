@@ -47,6 +47,7 @@
 </div>
 
 <div class="container mt-5">
+
     <h1 class="text-center text-danger animate__animated animate__bounce">🎉 Your Assignment Journey 🌟</h1>
 
     <!-- Progress Tracker Card -->
@@ -61,6 +62,9 @@
     </div>
 
     <!-- Revamped Loading Spinner Card -->
+
+
+
     <div id="loading" class="loading-overlay">
         <div class="loading-container">
             <div class="loading-content">
@@ -78,6 +82,7 @@
                          aria-valuemax="100">
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -85,7 +90,11 @@
     <form id="breakdownForm" method="POST" onsubmit="return submitForm(event)" action="{% url 'assignment_breakdown' assignment_id=assignment_id %}">
         {% csrf_token %}
         <div class="text-center">
+
+            
+
             <button type="submit" class="btn btn-danger btn-lg animate__animated animate__pulse">Get Started 🎯</button>
+
         </div>
     </form>
     <div class="card my-4"></div>
@@ -208,6 +217,9 @@
                             <li>{{ challenge }}</li>
                         {% endfor %}
                     </ul>
+
+                    
+
                     <p><strong>💪 Skill Tips:</strong> <span id="skillLevelConsiderations" class="highlight">{{ analysis.thought_process.skill_level_considerations }}</span></p>
                 </div>
             </div>
@@ -219,7 +231,11 @@
                 <h3 class="collapsible dropdown-toggle" id="breakdownDropdown" data-toggle="collapse" data-target="#breakdownContent" aria-haspopup="true" aria-expanded="false">
                     📋 Step-by-Step Plan
                 </h3>
+
                 <div id="breakdownContent" class="collapse">
+
+                    
+
                     <p><strong>⏱️ Time Needed:</strong> <span id="totalEstimatedTime" class="highlight">{{ breakdown.total_estimated_time }}</span></p>
                     <p><strong>📅 Work Plan:</strong> <span id="workDistribution" class="highlight">{{ breakdown.work_distribution }}</span></p>
                     <p><strong>☕ Break Time:</strong> <span id="breaksAndBuffer" class="highlight">{{ breakdown.breaks_and_buffer }}</span></p>
@@ -259,8 +275,14 @@
                                         </span>
                                         {% endif %}
                                     </div>
+
                                 </div>
+
+                                <!-- Task Details -->
                                 <div class="task-details" style="display: none;">
+
+                                    
+
                                     <div class="details-grid">
                                         {% if task.tips %}
                                         <div class="detail-section tips-section">
@@ -291,6 +313,7 @@
                                         </div>
                                         {% endif %}
                                     </div>
+
                                 </div>
                             </div>
                         {% endfor %}
@@ -298,6 +321,8 @@
                 </div>
             </div>
         </div>
+
+
 
         <!-- Next Task Card -->
         <div class="card my-4">
@@ -591,6 +616,8 @@ function createTaskCard(task) {
                         </div>
                     ` : ''}
 
+
+
                     ${task.distraction_mitigation ? `
                         <div class="detail-section mitigation-section">
                             <div class="section-header">
@@ -612,6 +639,7 @@ function createTaskCard(task) {
                             </ul>
                         </div>
                     ` : ''}
+
 
                     ${task.reward ? `
                         <div class="detail-section reward-section">
@@ -712,6 +740,7 @@ function simulateProgress() {
         const targetPercent = LOADING_CONFIG.STEPS[currentStep].percent;
         const stepDuration = LOADING_CONFIG.AVERAGE_TIME / LOADING_CONFIG.STEPS.length;
 
+
         // Update message
         loadingTitle.textContent = LOADING_CONFIG.STEPS[currentStep].message;
         
@@ -750,6 +779,7 @@ style.textContent = `
         justify-content: center;
         align-items: center;
         z-index: 1000;
+
     }
 
     .loading-container {
