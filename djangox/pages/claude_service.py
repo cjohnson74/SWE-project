@@ -22,13 +22,13 @@ def get_assignment_breakdown(assignment_id):
     """Fetch assignment details from the database and get a breakdown from Claude API."""
     logger.debug(f"Getting breakdown for assignment: {assignment_id}")
     assignment = Assignments.objects.get(assignment_id=assignment_id)
-    
+
     if not assignment:
         raise Exception(f"Assignment with ID {assignment_id} not found.")
 
     # Get file contents
     file_contents = get_assignment_files_content(assignment)
-    
+
     # Format file contents for Claude
     formatted_files = []
     for file_content in file_contents:
@@ -38,7 +38,7 @@ def get_assignment_breakdown(assignment_id):
                 content_dict = json.loads(file_content)
             else:
                 content_dict = file_content
-                
+
             formatted_files.append({
                 "file_name": content_dict.get("file_name", "Unknown"),
                 "content": content_dict.get("file_content", "")
@@ -102,7 +102,7 @@ def get_assignment_breakdown(assignment_id):
                 8. Brainstorm potential challenges and how to overcome them.
                 9. Consider motivational elements and rewards that could be incorporated into the plan.
 
-                Generate a JSON object containing all the required information. 
+                Generate a JSON object containing all the required information.
                 The JSON structure should be as follows and make sure I can parse it into a python dictionary:
                 {{
                     "analysis": {{
@@ -198,7 +198,7 @@ def get_assignment_files_content(assignment):
                 continue
             except json.JSONDecodeError as e:
                 print(f"❌ Cached response is invalid, reprocessing file. {e}")
-        
+
         try:
             file_type = file.file_type.lower()
             is_image = file_type in ['jpg', 'jpeg', 'png', 'gif', 'bmp']
@@ -220,6 +220,7 @@ def get_assignment_files_content(assignment):
                         image.save(img_byte_arr, format='PNG', optimize=False, quality=100)
                         img_byte_arr = img_byte_arr.getvalue()
                         image_data = base64.b64encode(img_byte_arr).decode('utf-8')
+
                         
                         messages = [{
                             "role": "user",
@@ -251,6 +252,7 @@ def get_assignment_files_content(assignment):
                         print(f"Calling Claude API for page {i+1}...")
                         response_text = call_claude_api(messages)
                         content_dict = parse_claude_response(response_text, file.file_name)
+
                         image_contents.append(content_dict)
                         print(f"✅ Successfully processed page {i+1}")
 
@@ -280,7 +282,7 @@ def get_assignment_files_content(assignment):
                     image_media_type = f"image/{file_type}"
                     if file_type == 'jpg':
                         image_media_type = "image/jpeg"
-                        
+
                     messages = [{
                         "role": "user",
                         "content": [
@@ -318,7 +320,7 @@ def get_assignment_files_content(assignment):
                     
                     files_content.append(content_dict)
                     print("✅ Successfully processed image")
-                    
+
                 except Exception as e:
                     print(f"❌ Failed to process image: {e}")
                     logger.error(f"Failed to process image {file.file_name}: {e}")
@@ -396,11 +398,11 @@ def parse_claude_response(response_text, file_name=None):
             # Try to extract JSON object and clean it
             start = response_text.find('{')
             end = response_text.rfind('}') + 1
-            
+
             if start == -1 or end == -1:
                 print("❌ No JSON object found in response")
                 raise ValueError("No JSON object found in response")
-                
+
             json_str = response_text[start:end]
             # Clean the extracted JSON string
             json_str = json_str.replace('\n', '\\n').replace('\r', '\\r')
@@ -415,7 +417,7 @@ def parse_claude_response(response_text, file_name=None):
                 print(result['file_content'])
             
             return result
-            
+
         except (json.JSONDecodeError, ValueError) as e:
             print(f"❌ Failed to parse response: {e}")
             logger.error(f"Failed to parse response for {file_name}: {e}")
@@ -443,4 +445,3 @@ def call_claude_api(messages):
         print(f"❌ Unexpected Claude API error: {e}")
         logger.error(f"Unexpected error calling Claude API: {e}")
         raise
-

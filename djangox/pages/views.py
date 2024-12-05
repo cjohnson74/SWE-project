@@ -20,6 +20,9 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+def LoginPageView(request):
+    return render(request, 'account/login.html')
+
 def HomePageView(request):
     courses = Courses.objects.all()
     return render(request, 'pages/home.html', {'courses': courses})
@@ -235,12 +238,12 @@ def DeadlineDeleteView(request):
 
 def AssignmentBreakdownView(request, assignment_id):
     logger.debug(f"Processing assignment breakdown for ID: {assignment_id}")
-    
+
     try:
         assignment = Assignments.objects.get(assignment_id=assignment_id)
     except Assignments.DoesNotExist:
         logger.error(f"Assignment with ID {assignment_id} not found")
-    
+
     if request.method == "POST":
         try:
             # Get new breakdown from Claude
@@ -249,7 +252,7 @@ def AssignmentBreakdownView(request, assignment_id):
 
             # Delete existing breakdown if it exists
             AssignmentBreakdown.objects.filter(assignment=assignment).delete()
-            
+
             # Create new AssignmentBreakdown
             new_breakdown = AssignmentBreakdown.objects.create(
                 assignment=assignment,
@@ -325,16 +328,16 @@ def AssignmentBreakdownView(request, assignment_id):
             existing_breakdown = AssignmentBreakdown.objects.select_related('assignment').prefetch_related('tasks__youtube_resources').get(assignment=assignment)
             logger.debug(f"Found existing breakdown for assignment: {assignment.name}")
             has_existing_breakdown = True
-            
+
             # Find the next task to focus on
             next_task = None
             current_time = timezone.now()
             incomplete_tasks = existing_breakdown.tasks.filter(completed=False).order_by('due_date')
-            
+
             if incomplete_tasks.exists():
                 next_task = incomplete_tasks.first()
                 logger.debug(f"Found next task: {next_task.task_number} - {next_task.description}")
-            
+
             # Convert stored data back into the expected format
             breakdown = {
                 'analysis': {
@@ -493,13 +496,13 @@ def upload_file(request):
 
 def delete_file(request, file_id):
     file_instance = fileModel.objects.get(id=file_id)
-    
+
     # Delete the file from the file system
     file_instance.file.delete()
-    
+
     # Delete the database record
     file_instance.delete()
-    
+
     return redirect('file_list')
 
 def file_list(request):
@@ -513,11 +516,11 @@ def CoursesGraphView(request):
 
     # Get current datetime for comparison
     current_time = timezone.now()
-    
+
     # Find the next assignment due
     next_assignment = None
     earliest_due_date = None
-    
+
     for course in courses:
         for assignment in course.assignments.all():
             if assignment.due_at:  # Check if due date exists
@@ -542,10 +545,10 @@ def CoursesGraphView(request):
                 due_at = ""
             else:
                 due_at = assignment.due_at.isoformat()
-                
+
             # Calculate if this is the next assignment due
             is_next = 'true' if (next_assignment and assignment.id == next_assignment.id) else 'false'
-                
+
             assignment_info = {
                 'name': assignment.name,
                 'due_at': due_at,
@@ -605,11 +608,11 @@ def save_progress(request, assignment_id):
             logger.error(f"Assignment with ID {assignment_id} not found")
 
         breakdown = AssignmentBreakdown.objects.get(assignment=assignment)
-        
+
         # Update progress tracking
         breakdown.progress_tracking = f"Completed {data['completed_count']} out of {data['total_count']} tasks"
         breakdown.save()
-        
+
         return JsonResponse({'status': 'success'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
@@ -620,7 +623,7 @@ def save_task_status(request, task_number):
         data = json.loads(request.body)
         assignment_id = data.get('assignment_id')
         completed = data.get('completed', False)
-        
+
         # Get the task
         try:
             assignment = Assignments.objects.get(assignment_id=assignment_id)
@@ -632,17 +635,17 @@ def save_task_status(request, task_number):
             breakdown=breakdown,
             task_number=task_number
         )
-        
+
         # Update task completion status
         task.completed = completed
         task.save()
-        
+
         # Update overall progress tracking
         total_tasks = breakdown.tasks.count()
         completed_tasks = breakdown.tasks.filter(completed=True).count()
         breakdown.progress_tracking = f"Completed {completed_tasks} out of {total_tasks} tasks"
         breakdown.save()
-        
+
         return JsonResponse({
             'status': 'success',
             'completed': completed,
@@ -663,11 +666,11 @@ def upload_assignment_file(request, assignment_id):
         try:
             assignment = Assignments.objects.get(assignment_id=assignment_id)
             form = AssignmentFileForm(request.POST, request.FILES)
-            
+
             if form.is_valid():
                 files = form.cleaned_data['files']
                 uploaded_files = []
-                
+
                 for file in files:
                     # Create the AssignmentFile instance
                     assignment_file = AssignmentFile.objects.create(
@@ -697,25 +700,25 @@ def upload_assignment_file(request, assignment_id):
                         'category': assignment_file.file_category,
                         'embedding_status': 'pending'
                     })
-                
+
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Files uploaded successfully',
                     'files': uploaded_files
                 })
-            
+
             return JsonResponse({
                 'status': 'error',
                 'message': form.errors
             }, status=400)
-            
+
         except Exception as e:
             logger.error(f"Error uploading files: {str(e)}")
             return JsonResponse({
                 'status': 'error',
                 'message': f'Upload failed: {str(e)}'
             }, status=500)
-    
+
     return JsonResponse({
         'status': 'error',
         'message': 'Invalid request method'
@@ -736,7 +739,7 @@ def delete_assignment_file(request, assignment_id, file_id):
                 'status': 'error',
                 'message': 'File not found'
             }, status=404)
-    
+
     return JsonResponse({
         'status': 'error',
         'message': 'Invalid request method'

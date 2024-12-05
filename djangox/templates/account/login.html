@@ -4,10 +4,27 @@
 {% block title %}Log in{% endblock %}
 
 {% block content %}
+<style>
+  /* Apply the Quicksand font */
+  body {
+    font-family: 'Quicksand', sans-serif;
+  }
+
+  h2 {
+    font-weight: 500;
+  }
+
+  form button {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+  }
+</style>
+
 <h2>Log in</h2>
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
+  <input type="hidden" name="next" value="/courses/" />
   <button class="btn btn-success" type="submit">Log in</button>
 </form>
 {% endblock content %}
