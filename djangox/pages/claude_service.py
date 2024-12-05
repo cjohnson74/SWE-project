@@ -18,13 +18,13 @@ def get_assignment_breakdown(assignment_id):
     """Fetch assignment details from the database and get a breakdown from Claude API."""
     logger.debug(f"Getting breakdown for assignment: {assignment_id}")
     assignment = Assignments.objects.get(assignment_id=assignment_id)
-    
+
     if not assignment:
         raise Exception(f"Assignment with ID {assignment_id} not found.")
 
     # Get file contents
     file_contents = get_assignment_files_content(assignment)
-    
+
     # Format file contents for Claude
     formatted_files = []
     for file_content in file_contents:
@@ -34,7 +34,7 @@ def get_assignment_breakdown(assignment_id):
                 content_dict = json.loads(file_content)
             else:
                 content_dict = file_content
-                
+
             formatted_files.append({
                 "file_name": content_dict.get("file_name", "Unknown"),
                 "content": content_dict.get("file_content", "")
@@ -96,7 +96,7 @@ def get_assignment_breakdown(assignment_id):
                 8. Brainstorm potential challenges and how to overcome them.
                 9. Consider motivational elements and rewards that could be incorporated into the plan.
 
-                Generate a JSON object containing all the required information. 
+                Generate a JSON object containing all the required information.
                 The JSON structure should be as follows and make sure I can parse it into a python dictionary:
                 {{
                     "analysis": {{
@@ -177,7 +177,7 @@ def get_assignment_files_content(assignment):
     print(f"\n=== Starting processing for assignment: {assignment.name} ===")
     logger.debug(f"Processing files for assignment: {assignment.name}")
     assignment_files_content = []
-    
+
     try:
         files = AssignmentFile.objects.filter(assignment=assignment)
         print(f"Found {len(files)} files to process")
@@ -185,17 +185,17 @@ def get_assignment_files_content(assignment):
         print(f"❌ ERROR: Failed to fetch files: {e}")
         logger.error(f"Failed to fetch files for assignment {assignment.name}: {e}")
         raise
-    
+
     for file in files:
         print(f"\n--- Processing file: {file.file_name} ---")
         logger.debug(f"Processing file: {file.file_name}")
-        
+
         # Validate file exists and is accessible
         if not file.file or not os.path.exists(file.file.path):
             print(f"❌ File {file.file_name} does not exist or is not accessible")
             logger.error(f"File {file.file_name} does not exist or is not accessible")
             continue
-            
+
         # Determine file type
         try:
             file_type = file.file_type.lower()
@@ -231,7 +231,7 @@ def get_assignment_files_content(assignment):
                         image.save(img_byte_arr, format='PNG', optimize=False, quality=100)
                         img_byte_arr = img_byte_arr.getvalue()
                         image_data = base64.b64encode(img_byte_arr).decode('utf-8')
-                        
+
                         # Call Claude API
                         messages = messages = [{
                             "role": "user",
@@ -262,9 +262,10 @@ def get_assignment_files_content(assignment):
                         ]
                         print(f"Calling Claude API for page {i+1}...")
                         response_text = call_claude_api(messages)
+                        content_dict = parse_claude_response(response_text, file.file_name)
                         image_contents.append(response_text)
                         print(f"✅ Successfully processed page {i+1}")
-                        
+
                     except Exception as e:
                         print(f"❌ Failed to process page {i+1}: {e}")
                         logger.error(f"Failed to process page {i+1} of PDF {file.file_name}: {e}")
@@ -285,7 +286,7 @@ def get_assignment_files_content(assignment):
                     image_media_type = f"image/{file_type}"
                     if file_type == 'jpg':
                         image_media_type = "image/jpeg"
-                        
+
                     messages = [{
                         "role": "user",
                         "content": [
@@ -318,7 +319,7 @@ def get_assignment_files_content(assignment):
                     content_dict = parse_claude_response(response_text, file.file_name)
                     assignment_files_content.append(content_dict)
                     print("✅ Successfully processed image")
-                    
+
                 except Exception as e:
                     print(f"❌ Failed to process image: {e}")
                     logger.error(f"Failed to process image {file.file_name}: {e}")
@@ -364,13 +365,13 @@ def get_assignment_files_content(assignment):
             print(f"❌ Unexpected error: {e}")
             logger.error(f"Unexpected error processing file {file.file_name}: {e}")
             continue
-            
+
     if not assignment_files_content:
         print("⚠️ Warning: No files were successfully processed")
         logger.warning(f"No files were successfully processed for assignment {assignment.name}")
     else:
         print(f"\n✅ Successfully processed {len(assignment_files_content)} files")
-        
+
     return assignment_files_content
 
 def parse_claude_response(response_text, file_name=None):
@@ -379,11 +380,11 @@ def parse_claude_response(response_text, file_name=None):
     if not response_text:
         print("❌ Empty response from Claude")
         raise ValueError("Empty response from Claude")
-        
+
     # Attempt to extract JSON object
     if not response_text.startswith('{'):
         response_text = "{" + response_text
-        
+
     try:
         result = json.loads(response_text)
         print("✅ Successfully parsed response")
@@ -393,16 +394,16 @@ def parse_claude_response(response_text, file_name=None):
         try:
             start = response_text.find('{')
             end = response_text.rfind('}') + 1
-            
+
             if start == -1 or end == -1:
                 print("❌ No JSON object found in response")
                 raise ValueError("No JSON object found in response")
-                
+
             json_str = response_text[start:end]
             result = json.loads(json_str)
             print("✅ Successfully extracted and parsed JSON")
             return result
-            
+
         except (json.JSONDecodeError, ValueError) as e:
             print(f"❌ Failed to parse response: {e}")
             logger.error(f"Failed to parse response for {file_name}: {e}")
