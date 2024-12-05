@@ -20,5 +20,7 @@ urlpatterns = [
     path('assignments/<str:assignment_id>/upload-file/', views.upload_assignment_file, name='upload_assignment_file'),
     path('assignments/<str:assignment_id>/delete-file/<int:file_id>/', views.delete_assignment_file, name='delete_assignment_file'),
     path('accounts/login/', views.LoginPageView, name='login')
-
+    path('api/semantic-search/<str:assignment_id>/', views.semantic_search, name='semantic_search'),
+    path('api/embeddings-status/<str:assignment_id>/', views.check_embeddings_status, name='check_embeddings_status'),
+    path('courses/<str:course_id>/modules/', views.ModuleListView, name='course_modules'),
 ]

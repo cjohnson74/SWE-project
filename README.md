@@ -51,6 +51,45 @@ $ .venv\Scripts\Activate.ps1
 # macOS
 $ source .venv/bin/activate
 
+# Linux
+$ source .venv/bin/activate
+
+# Mac/Linux
+$ pip install -r requirements.txt
+
+# Windows
+$ .venv\Scripts\pip.exe install -r requirements.txt
+```
+
+### System Dependencies
+
+This project requires Poppler for PDF processing. Install it based on your operating system:
+
+**macOS:**
+```bash
+brew install poppler
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install poppler-utils
+```
+
+**Windows:**
+1. Download Poppler from: [Poppler for Windows](http://blog.alivate.com.au/poppler-windows/)
+2. Extract to a folder (e.g., C:\poppler-xx)
+3. Add the `bin` folder to your PATH environment variable
+4. Restart your terminal/IDE
+
+To verify the installation:
+```bash
+# Mac/Linux
+which pdftoppm
+
+# Windows
+where pdftoppm
+```
+
 ### .env
 ```markdown
 # Django
@@ -80,16 +119,15 @@ Once the token is generated, you cannot view it again, and you'll have to genera
 
 Source: https://canvas.instructure.com/doc/api/file.oauth.html#manual-token-generation
 
-### Seed Canvas Data
-```markdown
-(.venv) djangox $ pip install -r requirements.txt
-(.venv) djangox $ python seed_canvas_data.py
-```
-
 # These commands are not needed anymore as we are using MongoDB now, but we don't want to delete them
 ```markdown
 #(.venv) djangox $ python manage.py migrate
 #(.venv) djangox $ python manage.py createsuperuser
+```
+
+### Seed Canvas Data
+```markdown
+(.venv) djangox $ python seed_canvas_data.py
 ```
 
 ### Run Server  

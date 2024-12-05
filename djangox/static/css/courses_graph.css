@@ -1,0 +1,249 @@
+/* Responsive container styles */
+.graph-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 75%; /* Aspect ratio 4:3 */
+    min-height: 400px;
+}
+
+#graph {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar styles */
+.instructions, .legend {
+    background: #f9f9f9; /* Light background for contrast */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+    .instructions, .legend {
+        position: static !important;
+        margin-bottom: 20px;
+    }
+    
+    .graph-container {
+        padding-bottom: 100%; /* More square aspect ratio on mobile */
+        min-height: 300px;
+    }
+}
+
+/* Node styles */
+.bubble {
+    fill: #4a90e2;
+    stroke: #ffffff;
+    stroke-width: 3px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+.bubble:hover {
+    fill: #357abd;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.assignment {
+    fill: #f6b93b;
+    stroke: #ffffff;
+    stroke-width: 2px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+.assignment:hover {
+    fill: #e59d1f;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.task {
+    fill: #78e08f;
+    stroke: #ffffff;
+    stroke-width: 2px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+.task:hover {
+    fill: #60b674;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+.link {
+    stroke: #b2bec3;
+    stroke-width: 3px;
+    stroke-dasharray: 5,5;  /* Creates a dashed line */
+}
+
+/* General tooltip styling */
+.custom-tooltip {
+    background-color: #ffffff !important; /* Solid white background */
+    border: 2px solid #dfe6e9 !important; /* Light gray border */
+    border-radius: 8px; /* Rounded corners */
+    padding: 10px; /* Consistent padding */
+    font-size: 14px; /* Font size */
+    line-height: 1.4; /* Line height for readability */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    max-width: 300px; /* Maximum width to prevent overflow */
+    color: #2d3436; /* Text color */
+    z-index: 1000; /* Ensure tooltip appears above other elements */
+}
+
+/* Title styling */
+.tooltip-title {
+    font-size: 16px; /* Larger font for title */
+    font-weight: bold; /* Bold title */
+    margin-bottom: 4px; /* Reduced space below title */
+    padding-bottom: 2px; /* Reduced space below title */
+    border-bottom: 1px solid #dfe6e9; /* Bottom border for separation */
+}
+
+/* Info line styling */
+.tooltip-info {
+    margin: 4px 0; /* Space between info lines */
+    display: flex; /* Flexbox for alignment */
+    align-items: center; /* Center items vertically */
+    gap: 8px; /* Space between icon and text */
+}
+
+/* Icon styling */
+.tooltip-icon {
+    font-size: 16px; /* Icon size */
+    min-width: 20px; /* Minimum width for alignment */
+    text-align: center; /* Center icon */
+}
+
+/* Legend styling */
+.legend {
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Legend item styling */
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+/* Legend color circle */
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+/* Instructions panel */
+.instructions {
+    position: fixed;
+    left: 20px;
+    top: 120px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+}
+
+/* Text label styling */
+.node-label {
+    font-size: 14px;  /* Increased from 12px */
+    font-weight: bold;
+    text-anchor: middle;  /* Centers text horizontally */
+    dominant-baseline: middle;  /* Centers text vertically */
+    fill: #ffffff;
+    pointer-events: none;  /* Makes text not interfere with clicks */
+    user-select: none;  /* Prevents text selection */
+}
+
+/* Completion status styles */
+.assignment.completed {
+    fill: #27ae60;  /* Green for completed */
+}
+.assignment.incomplete {
+    fill: #f6b93b;  /* Original yellow for incomplete */
+}
+.assignment.overdue {
+    fill: #e74c3c;  /* Red for overdue */
+}
+
+.task.completed {
+    fill: #2ecc71;  /* Bright green for completed */
+}
+.task.incomplete {
+    fill: #78e08f;  /* Original green for incomplete */
+}
+.task.overdue {
+    fill: #ff7675;  /* Soft red for overdue */
+}
+
+/* Update legend to include completion status */
+.legend-section {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+
+.course-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    z-index: 10; /* Ensure labels are above other elements */
+}
+
+.next-assignment {
+    border-left: 4px solid #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.progress {
+    height: 20px;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    line-height: 20px;
+}
+
+.priority-assignment {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.priority-urgent {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-left-color: #e74c3c;
+}
+
+.priority-upcoming {
+    background-color: rgba(246, 185, 59, 0.1);
+    border-left-color: #f6b93b;
+}
+
+/* Arrow styling */
+.tooltip .arrow::before {
+    border-top-color: #dfe6e9 !important;
+    border-bottom-color: #dfe6e9 !important;
+    border-left-color: #dfe6e9 !important;
+    border-right-color: #dfe6e9 !important;
+}

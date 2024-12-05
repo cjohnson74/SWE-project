@@ -1,9 +1,9 @@
 from .forms import DeadlineForm
-from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, Deadlines, AssignmentBreakdown, YouTubeResource, AssignmentBreakdownTask, AssignmentFile
+from .models import Students, Courses, Assignments, Quizzes, StudentAssignments, Submissions, Files, Deadlines, AssignmentBreakdown, YouTubeResource, AssignmentBreakdownTask, AssignmentFile, generate_embeddings, Modules, ModuleItems
 from .forms import fileForm, AssignmentFileForm
 from .models import fileModel
 from django.shortcuts import redirect, render, get_object_or_404
-from .claude_service import get_assignment_breakdown
+from .claude_service import get_assignment_breakdown, get_assignment_files_content
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
 import json
@@ -13,6 +13,10 @@ from django.views.decorators.http import require_http_methods
 from django.utils.dateparse import parse_datetime
 from django.core.files.storage import default_storage
 import os
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .embedding_service import EmbeddingService
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -288,6 +292,7 @@ def AssignmentBreakdownView(request, assignment_id):
                 task = AssignmentBreakdownTask.objects.create(
                     breakdown=new_breakdown,
                     task_number=task_data['task_number'],
+                    title=task_data['title'],
                     description=task_data['description'],
                     estimated_time=task_data['estimated_time'],
                     due_date=due_date,  # Use the parsed datetime
@@ -363,6 +368,7 @@ def AssignmentBreakdownView(request, assignment_id):
                 'assignment_breakdown': [],
                 'next_task': {
                     'task_number': next_task.task_number,
+                    'title': next_task.title,
                     'description': next_task.description,
                     'estimated_time': next_task.estimated_time,
                     'due_date': next_task.due_date,
@@ -387,6 +393,7 @@ def AssignmentBreakdownView(request, assignment_id):
             for task in existing_breakdown.tasks.all():
                 task_data = {
                     'task_number': task.task_number,
+                    'title': task.title,
                     'description': task.description,
                     'estimated_time': task.estimated_time,
                     'due_date': task.due_date,
@@ -560,6 +567,7 @@ def CoursesGraphView(request):
                 for task in breakdown.tasks.all():
                     task_info = {
                         'task_number': task.task_number,
+                        'title': task.title,
                         'description': task.description,
                         'estimated_time': task.estimated_time,
                         'due_date': task.due_date.isoformat(),
@@ -664,22 +672,38 @@ def upload_assignment_file(request, assignment_id):
                 uploaded_files = []
 
                 for file in files:
+                    # Create the AssignmentFile instance
                     assignment_file = AssignmentFile.objects.create(
                         assignment=assignment,
                         file=file,
                         file_name=file.name,
-                        file_type=os.path.splitext(file.name)[1][1:].lower()
+                        file_type=file.name.split('.')[-1].lower()
                     )
-
+                    
+                    # Extract content using Claude first
+                    try:
+                        content = get_assignment_files_content(assignment)
+                        # if content and len(content) > 0:
+                        #     # Update the file with Claude's response
+                        #     print(f"🔍 Claude's response: {content}")
+                        #     assignment_file.claude_response = content[0]
+                        #     assignment_file.save()
+                            
+                            # # Queue embedding generation as a background task
+                            # generate_embeddings.delay(assignment_file.id)
+                    except Exception as e:
+                        logger.error(f"Error processing file content: {str(e)}")
+                    
                     uploaded_files.append({
-                        'name': file.name,
-                        'type': assignment_file.file_category,
-                        'id': assignment_file.id
+                        'id': assignment_file.id,
+                        'name': assignment_file.file_name,
+                        'category': assignment_file.file_category,
+                        'embedding_status': 'pending'
                     })
 
                 return JsonResponse({
                     'status': 'success',
-                    'message': f'Successfully uploaded {len(uploaded_files)} files',
+                    'message': 'Files uploaded successfully',
                     'files': uploaded_files
                 })
 
@@ -692,8 +716,8 @@ def upload_assignment_file(request, assignment_id):
             logger.error(f"Error uploading files: {str(e)}")
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
-            }, status=400)
+                'message': f'Upload failed: {str(e)}'
+            }, status=500)
 
     return JsonResponse({
         'status': 'error',
@@ -720,3 +744,96 @@ def delete_assignment_file(request, assignment_id, file_id):
         'status': 'error',
         'message': 'Invalid request method'
     }, status=405)
+
+@api_view(['POST'])
+def semantic_search(request, assignment_id):
+    try:
+        print(f"\n🔍 Starting semantic search for assignment {assignment_id}")
+        query = request.data.get('query')
+        if not query:
+            return Response({'error': 'No query provided'}, status=400)
+            
+        print(f"📝 Query: {query}")
+        embedding_service = EmbeddingService()
+        files = AssignmentFile.objects.filter(
+            assignment_id=assignment_id,
+            last_embedded__isnull=False  # Only get files with completed embeddings
+        )
+        print(f"📁 Found {files.count()} files with embeddings")
+        
+        if not files.exists():
+            return Response({
+                'status': 'warning',
+                'message': 'Files are still being processed. Please try again in a moment.',
+                'results': []
+            })
+        
+        results = []
+        for file in files:
+            if file.chunk_embeddings:
+                print(f"\n📄 Searching in file: {file.file_name}")
+                similar_chunks = embedding_service.find_similar_chunks(
+                    query=query,
+                    chunk_embeddings=file.chunk_embeddings,
+                    top_k=3
+                )
+                
+                for similarity, chunk, index in similar_chunks:
+                    print(f"  ✓ Found match (similarity: {similarity:.3f})")
+                    results.append({
+                        'file_name': file.file_name,
+                        'chunk': chunk,
+                        'similarity': float(similarity),
+                        'chunk_index': index
+                    })
+            else:
+                print(f"⚠️ No embeddings found for file: {file.file_name}")
+        
+        # Sort by similarity
+        results.sort(key=lambda x: x['similarity'], reverse=True)
+        top_results = results[:5]  # Return top 5 results
+        
+        print(f"\n✅ Search complete - found {len(top_results)} top results")
+        return Response({
+            'status': 'success',
+            'results': top_results
+        })
+        
+    except Exception as e:
+        print(f"❌ Error during semantic search: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@api_view(['GET'])
+def check_embeddings_status(request, assignment_id):
+    try:
+        total_files = AssignmentFile.objects.filter(assignment_id=assignment_id).count()
+        processed_files = AssignmentFile.objects.filter(
+            assignment_id=assignment_id,
+            last_embedded__isnull=False
+        ).count()
+        
+        return Response({
+            'status': 'success',
+            'total_files': total_files,
+            'processed_files': processed_files,
+            'is_complete': total_files == processed_files
+        })
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+def ModuleListView(request, course_id):
+    """Display modules and their items for a course"""
+    course = get_object_or_404(Courses, course_id=course_id)
+    modules = Modules.objects.filter(course=course).prefetch_related('items')
+    
+    context = {
+        'course': course,
+        'modules': modules
+    }
+    return render(request, 'pages/module_list.html', context)
