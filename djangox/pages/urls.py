@@ -19,4 +19,7 @@ urlpatterns = [
     path('api/save-task-status/<int:task_number>/', views.save_task_status, name='save_task_status'),
     path('assignments/<str:assignment_id>/upload-file/', views.upload_assignment_file, name='upload_assignment_file'),
     path('assignments/<str:assignment_id>/delete-file/<int:file_id>/', views.delete_assignment_file, name='delete_assignment_file'),
+    path('api/semantic-search/<str:assignment_id>/', views.semantic_search, name='semantic_search'),
+    path('api/embeddings-status/<str:assignment_id>/', views.check_embeddings_status, name='check_embeddings_status'),
+    path('courses/<str:course_id>/modules/', views.ModuleListView, name='course_modules'),
 ]

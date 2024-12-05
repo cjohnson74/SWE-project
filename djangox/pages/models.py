@@ -1,4 +1,8 @@
 from django.db import models
+import numpy as np
+from celery import shared_task
+from .embedding_service import EmbeddingService
+from datetime import datetime
 
 class fileModel(models.Model):
     file = models.FileField(upload_to='uploads/')
@@ -74,6 +78,7 @@ class AssignmentBreakdown(models.Model):
 class AssignmentBreakdownTask(models.Model):
     breakdown = models.ForeignKey(AssignmentBreakdown, on_delete=models.CASCADE, related_name='tasks')
     task_number = models.IntegerField()
+    title = models.CharField(max_length=255)
     description = models.TextField()
     estimated_time = models.CharField(max_length=255)
     due_date = models.DateTimeField()
@@ -110,7 +115,7 @@ class StudentAssignments(models.Model):
 class Quizzes(models.Model):
     canvas_id = models.CharField(max_length=255, unique=True)
     course = models.ForeignKey(Courses, on_delete=models.CASCADE, related_name='quizzes')
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     due_at = models.DateTimeField()
     time_limit = models.IntegerField()
@@ -166,8 +171,20 @@ class AssignmentFile(models.Model):
     file_type = models.CharField(max_length=100)
     file_category = models.CharField(max_length=20, choices=FILE_TYPES, default='other')
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    content = models.TextField(blank=True, null=True)  # For storing converted text content
-    thumbnail = models.ImageField(upload_to='assignment_thumbnails/', blank=True, null=True)
+    content = models.TextField(blank=True, null=True)  # Raw content
+    claude_response = models.TextField(blank=True, null=True)  # Claude's interpretation
+    embedding_vector = models.BinaryField(null=True, blank=True)  # Document-level embedding
+    chunk_embeddings = models.JSONField(null=True, blank=True)  # Chunk-level embeddings
+    last_embedded = models.DateTimeField(null=True, blank=True)
+    
+    def set_embedding(self, vector):
+        if vector is not None:
+            self.embedding_vector = np.array(vector).tobytes()
+    
+    def get_embedding(self):
+        if self.embedding_vector:
+            return np.frombuffer(self.embedding_vector)
+        return None
 
     def save(self, *args, **kwargs):
         # Determine file category based on extension
@@ -181,9 +198,80 @@ class AssignmentFile(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Delete the actual files when model is deleted
+        # Delete the actual file when model is deleted
         if self.file:
             self.file.delete(save=False)
-        if self.thumbnail:
-            self.thumbnail.delete(save=False)
         super().delete(*args, **kwargs)
+
+@shared_task
+def generate_embeddings(file_id):
+    """Generate embeddings for a file in the background"""
+    try:
+        file = AssignmentFile.objects.get(id=file_id)
+        embedding_service = EmbeddingService()
+        
+        # Generate embeddings
+        embeddings_data = embedding_service.create_embeddings(
+            file.content or file.claude_response,
+            file.file_name
+        )
+        
+        if embeddings_data:
+            file.set_embedding(embeddings_data['doc_embedding'])
+            file.chunk_embeddings = embeddings_data['chunk_embeddings']
+            file.last_embedded = datetime.now()
+            file.save()
+            
+        return True
+        
+    except Exception as e:
+        print(f"Error generating embeddings: {e}")
+        return False
+
+class Modules(models.Model):
+    module_id = models.CharField(max_length=255, unique=True)
+    course = models.ForeignKey(Courses, on_delete=models.CASCADE, related_name='modules')
+    name = models.CharField(max_length=255)
+    position = models.IntegerField(default=0)
+    unlock_at = models.DateTimeField(null=True, blank=True)
+    require_sequential_progress = models.BooleanField(default=False)
+    publish_final_grade = models.BooleanField(default=False)
+    prerequisite_module_ids = models.JSONField(default=list, blank=True)
+    workflow_state = models.CharField(max_length=50, default='active')
+    items_count = models.IntegerField(default=0)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    published = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['position']
+        verbose_name = 'Module'
+        verbose_name_plural = 'Modules'
+
+    def __str__(self):
+        return f"{self.course.course_code} - {self.name}"
+
+class ModuleItems(models.Model):
+    item_id = models.CharField(max_length=255, unique=True)
+    module = models.ForeignKey(Modules, on_delete=models.CASCADE, related_name='items')
+    title = models.CharField(max_length=255)
+    position = models.IntegerField(default=0)
+    indent = models.IntegerField(default=0)
+    type = models.CharField(max_length=50)
+    content_id = models.CharField(max_length=255, null=True, blank=True)
+    html_url = models.URLField(max_length=500, blank=True)
+    url = models.URLField(max_length=500, blank=True)
+    completion_requirement = models.JSONField(default=dict, blank=True)
+    page_url = models.CharField(max_length=255, blank=True, null=True)
+    external_url = models.URLField(max_length=500, blank=True)
+    new_tab = models.BooleanField(default=False)
+    content_details = models.JSONField(default=dict, blank=True)
+    published = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['position']
+        verbose_name = 'Module Item'
+        verbose_name_plural = 'Module Items'
+
+    def __str__(self):
+        return f"{self.module.name} - {self.title}"
