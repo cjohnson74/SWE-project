@@ -1,0 +1,60 @@
+{% extends '_base.html' %}
+
+{% block title %}Course Modules{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ course.name }} - Modules</h2>
+    
+    <div class="modules-container">
+        {% for module in modules %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ module.name }}</h5>
+                    {% if module.unlock_at %}
+                        <span class="badge badge-info">Unlocks: {{ module.unlock_at|date:"M d, Y" }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    {% if module.items.all %}
+                        <ul class="list-group list-group-flush">
+                            {% for item in module.items.all %}
+                                <li class="list-group-item" style="padding-left: {{ item.indent|add:1 }}rem;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>
+                                            {% if item.type == 'Assignment' %}
+                                                📝
+                                            {% elif item.type == 'Quiz' %}
+                                                📋
+                                            {% elif item.type == 'File' %}
+                                                📄
+                                            {% else %}
+                                                📌
+                                            {% endif %}
+                                            {% if item.html_url %}
+                                                <a href="{{ item.html_url }}" target="_blank">{{ item.title }}</a>
+                                            {% else %}
+                                                {{ item.title }}
+                                            {% endif %}
+                                        </span>
+                                        {% if item.completion_requirement %}
+                                            <span class="badge badge-secondary">
+                                                {{ item.completion_requirement.type|title }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No items in this module</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">No modules found for this course.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

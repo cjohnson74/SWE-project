@@ -8,6 +8,10 @@ import logging
 import base64
 from pdf2image import convert_from_path
 from io import BytesIO
+from langchain_openai import OpenAIEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+import numpy as np
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -66,18 +70,20 @@ def get_assignment_breakdown(assignment_id):
                 Files:
                 {files_text}
 
-                Your task is to analyze this assignment and create a detailed breakdown of tasks, time estimates, helpful resources, and motivational elements. Follow these steps:
+                Your goal is to analyze this assignment and create a detailed breakdown of ALL the smaller, actionable tasks that the student needs to complete to finish the assignment on time, including time estimates, helpful resources, and motivational elements. Follow these steps:
                 1. Analyze the assignment description, considering its scope, complexity, and requirements.
                 2. Break down the assignment into a logical sequence of smaller, actionable tasks.
                 3. For each task, provide:
-                    a) A brief description of what needs to be done
-                    b) An estimated time range to complete the task (e.g., "1-2 hours", "2-3 days")
-                    c) Relevant tips or considerations
-                    d) Suggestions for helpful YouTube videos (include titles and links)
-                    e) Priority level (High/Medium/Low)
-                    f) Potential distractions and mitigation strategies
-                    g) Focus techniques
-                    h) A small reward or motivational element upon completion
+                    a) A title for the task
+                    b) A detailed description of what needs to be done
+                    c) A due date for the task
+                    d) An estimated time range to complete the task (e.g. 5-10 minutes, 1-2 hours, 2-3 days)
+                    e) Relevant tips or considerations
+                    f) Suggestions for helpful YouTube videos (include titles and links)
+                    g) Priority level (High/Medium/Low)
+                    h) Potential distractions and mitigation strategies
+                    i) Focus techniques
+                    j) A small reward or motivational element upon completion
                 4. Calculate a total estimated time range for the entire assignment.
                 5. Suggest how to distribute the work over time based on the given deadline.
                 6. Include recommendations for breaks and buffer time.
@@ -121,6 +127,7 @@ def get_assignment_breakdown(assignment_id):
                     "assignment_breakdown": [
                         {{
                             "task_number": "integer",
+                            "title": "string",
                             "description": "string",
                             "estimated_time": "string",
                             "due_date": "ISO date string",
@@ -173,67 +180,48 @@ def fetch_assignments_by_course(course_id):
     return Assignments.objects.filter(course_id=course_id)
 
 def get_assignment_files_content(assignment):
-    """Get the content of the assignment files."""
-    print(f"\n=== Starting processing for assignment: {assignment.name} ===")
-    logger.debug(f"Processing files for assignment: {assignment.name}")
-    assignment_files_content = []
-    
-    try:
-        files = AssignmentFile.objects.filter(assignment=assignment)
-        print(f"Found {len(files)} files to process")
-    except Exception as e:
-        print(f"❌ ERROR: Failed to fetch files: {e}")
-        logger.error(f"Failed to fetch files for assignment {assignment.name}: {e}")
-        raise
+    """Get the content of the specified files."""
+    files = AssignmentFile.objects.filter(assignment=assignment)
+    print(f"\n=== Starting processing for {len(files)} files ===")
+    files_content = []
     
     for file in files:
         print(f"\n--- Processing file: {file.file_name} ---")
         logger.debug(f"Processing file: {file.file_name}")
         
-        # Validate file exists and is accessible
-        if not file.file or not os.path.exists(file.file.path):
-            print(f"❌ File {file.file_name} does not exist or is not accessible")
-            logger.error(f"File {file.file_name} does not exist or is not accessible")
-            continue
-            
-        # Determine file type
+        # Check if we already have Claude's response
+        if file.claude_response:
+            try:
+                print(f"✅ Using existing Claude response for {file.file_name} (cached) {file.claude_response}")
+                content_dict = json.loads(file.claude_response)
+                files_content.append(content_dict)
+                continue
+            except json.JSONDecodeError as e:
+                print(f"❌ Cached response is invalid, reprocessing file. {e}")
+        
         try:
             file_type = file.file_type.lower()
             is_image = file_type in ['jpg', 'jpeg', 'png', 'gif', 'bmp']
             is_pdf = file_type == 'pdf'
-            print(f"File type: {file_type} (Image: {is_image}, PDF: {is_pdf})")
-        except AttributeError as e:
-            print(f"❌ Failed to determine file type: {e}")
-            logger.error(f"Failed to determine file type for {file.file_name}: {e}")
-            continue
-
-        try:
+            
             if is_pdf:
-                print("Converting PDF to images...")
                 try:
-                    images = convert_from_path(
-                        file.file.path,
-                        dpi=300,
-                        fmt='PNG',
-                        grayscale=False
-                    )
+                    # Save raw PDF content
+                    with file.file.open('rb') as pdf_file:
+                        file.content = base64.b64encode(pdf_file.read()).decode('utf-8')
+                    
+                    images = convert_from_path(file.file.path, dpi=300, fmt='PNG', grayscale=False)
                     print(f"✅ Successfully converted PDF to {len(images)} images")
-                except Exception as e:
-                    print(f"❌ PDF conversion failed: {e}")
-                    logger.error(f"Failed to convert PDF {file.file_name}: {e}")
-                    continue
-
-                image_contents = []
-                for i, image in enumerate(images):
-                    print(f"Processing PDF page {i+1}/{len(images)}")
-                    try:
+                    
+                    image_contents = []
+                    for i, image in enumerate(images):
+                        print(f"Processing PDF page {i+1}/{len(images)}")
                         img_byte_arr = BytesIO()
                         image.save(img_byte_arr, format='PNG', optimize=False, quality=100)
                         img_byte_arr = img_byte_arr.getvalue()
                         image_data = base64.b64encode(img_byte_arr).decode('utf-8')
                         
-                        # Call Claude API
-                        messages = messages = [{
+                        messages = [{
                             "role": "user",
                             "content": [
                                 {
@@ -246,7 +234,7 @@ def get_assignment_files_content(assignment):
                                 },
                                 {
                                     "type": "text",
-                                    "text": f"This is page {i+1} of a PDF containing handwritten notes. Please carefully extract and transcribe all handwritten text, maintaining the original structure and layout. Return the content in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
+                                    "text": f"This is page {i+1} of a PDF uploaded by a student for a course assignment. It may contain handwritten text, code, diagrams, and other content. Please carefully extract and transcribe all handwritten text, code, diagram descriptions, and other content, maintaining the original structure and layout. Return the content in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
                                 }
                             ]
                         },
@@ -262,26 +250,33 @@ def get_assignment_files_content(assignment):
                         ]
                         print(f"Calling Claude API for page {i+1}...")
                         response_text = call_claude_api(messages)
-                        image_contents.append(response_text)
+                        content_dict = parse_claude_response(response_text, file.file_name)
+                        image_contents.append(content_dict)
                         print(f"✅ Successfully processed page {i+1}")
-                        
-                    except Exception as e:
-                        print(f"❌ Failed to process page {i+1}: {e}")
-                        logger.error(f"Failed to process page {i+1} of PDF {file.file_name}: {e}")
-                        continue
 
-            elif is_image:
-                print("Processing image file...")
-                try:
-                    with file.file.open('rb') as img_file:
-                        image_data = base64.b64encode(img_file.read()).decode('utf-8')
-                    print("✅ Successfully read image file")
+                    # Save combined PDF content
+                    if image_contents:
+                        combined_content = {
+                            "file_name": file.file_name,
+                            "file_content": "\n\n".join(page["file_content"] for page in image_contents)
+                        }
+                        print(f"🔍 Combined Claude's response: {combined_content}")
+                        file.claude_response = json.dumps(combined_content)
+                        file.save()
+                        files_content.extend(image_contents)
+
                 except Exception as e:
-                    print(f"❌ Failed to read image: {e}")
-                    logger.error(f"Failed to read image file {file.file_name}: {e}")
+                    print(f"❌ Failed to process PDF: {e}")
+                    logger.error(f"Failed to process PDF {file.file_name}: {e}")
                     continue
 
+            elif is_image:
                 try:
+                    # Save raw image content
+                    with file.file.open('rb') as img_file:
+                        image_data = base64.b64encode(img_file.read()).decode('utf-8')
+                        file.content = image_data
+                    
                     image_media_type = f"image/{file_type}"
                     if file_type == 'jpg':
                         image_media_type = "image/jpeg"
@@ -299,7 +294,7 @@ def get_assignment_files_content(assignment):
                             },
                             {
                                 "type": "text",
-                                "text": f"Extract the content from this image and return it in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
+                                "text": f"Extract the content from this image uploaded by a student for a course assignment. It may contain handwritten text, code, diagrams, and other content. Please carefully extract and transcribe all handwritten text, code, diagram descriptions, and other content, maintaining the original structure and layout. Return the content in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
                             }
                         ]
                     },
@@ -316,7 +311,12 @@ def get_assignment_files_content(assignment):
                     print("Calling Claude API for image interpretation...")
                     response_text = call_claude_api(messages)
                     content_dict = parse_claude_response(response_text, file.file_name)
-                    assignment_files_content.append(content_dict)
+                    
+                    # Save Claude's response
+                    file.claude_response = json.dumps(content_dict)
+                    file.save()
+                    
+                    files_content.append(content_dict)
                     print("✅ Successfully processed image")
                     
                 except Exception as e:
@@ -326,52 +326,42 @@ def get_assignment_files_content(assignment):
 
             else:  # Text-based files
                 try:
-                    messages = [{
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": image_media_type,
-                                    "data": image_data,
-                                }
-                            },
-                            {
-                                "type": "text",
-                                "text": f"Extract the content from this image and return it in a valid JSON object with this structure: {{\"file_name\": \"{file.file_name}\", \"file_content\": \"content\"}}"
-                            }
-                        ]
-                    },
-                    {
-                        "role": "assistant",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "{"
-                            }
-                        ]
+                    # Save raw text content
+                    with file.file.open('r') as text_file:
+                        file_content = text_file.read()
+                        file.content = file_content
+                    
+                    content_dict = {
+                        "file_name": file.file_name,
+                        "file_content": file_content
                     }
-                    ]
-                    response_text = call_claude_api(messages)
-                    content_dict = parse_claude_response(response_text, file.file_name)
-                    assignment_files_content.append(content_dict)
+                    
+                    # Save content directly for text files
+                    file.claude_response = json.dumps(content_dict)
+                    file.save()
+                    
+                    files_content.append(content_dict)
+                    print("✅ Successfully processed text file")
+                    
                 except Exception as e:
+                    print(f"❌ Failed to process text file: {e}")
                     logger.error(f"Failed to process text file {file.file_name}: {e}")
                     continue
+
+            print(f"💬 Claude's response for {file.file_name}: {file.claude_response}")
 
         except Exception as e:
             print(f"❌ Unexpected error: {e}")
             logger.error(f"Unexpected error processing file {file.file_name}: {e}")
             continue
             
-    if not assignment_files_content:
+    if not files_content:
         print("⚠️ Warning: No files were successfully processed")
         logger.warning(f"No files were successfully processed for assignment {assignment.name}")
     else:
-        print(f"\n✅ Successfully processed {len(assignment_files_content)} files")
+        print(f"\n✅ Successfully processed {len(files_content)} files")
         
-    return assignment_files_content
+    return files_content
 
 def parse_claude_response(response_text, file_name=None):
     """Helper function to parse Claude's response and extract JSON."""
@@ -379,18 +369,31 @@ def parse_claude_response(response_text, file_name=None):
     if not response_text:
         print("❌ Empty response from Claude")
         raise ValueError("Empty response from Claude")
-        
-    # Attempt to extract JSON object
+    
     if not response_text.startswith('{'):
         response_text = "{" + response_text
         
+    # Clean and normalize the response text
     try:
-        result = json.loads(response_text)
+        # Remove newlines and spaces between JSON elements
+        cleaned_text = ' '.join(response_text.split())
+        # Handle special mathematical symbols
+        cleaned_text = cleaned_text.encode('ascii', 'ignore').decode('ascii')
+        
+        print("Attempting to parse cleaned JSON...")
+        result = json.loads(cleaned_text)
         print("✅ Successfully parsed response")
+        
+        # Print the extracted file contents
+        if 'file_content' in result:
+            print(f"\n📄 File Contents Extracted from Claude for {file_name}:")
+            print(result['file_content'])
+        
         return result
-    except json.JSONDecodeError:
-        print("⚠️ Initial JSON parsing failed, attempting to extract JSON object...")
+    except json.JSONDecodeError as e:
+        print("⚠️ Initial JSON parsing failed, attempting alternative method...")
         try:
+            # Try to extract JSON object and clean it
             start = response_text.find('{')
             end = response_text.rfind('}') + 1
             
@@ -399,8 +402,18 @@ def parse_claude_response(response_text, file_name=None):
                 raise ValueError("No JSON object found in response")
                 
             json_str = response_text[start:end]
+            # Clean the extracted JSON string
+            json_str = json_str.replace('\n', '\\n').replace('\r', '\\r')
+            json_str = json_str.encode('ascii', 'ignore').decode('ascii')
+            
             result = json.loads(json_str)
             print("✅ Successfully extracted and parsed JSON")
+            
+            # Print the extracted file contents
+            if 'file_content' in result:
+                print(f"\n📄 File Contents Extracted from Claude for {file_name}:")
+                print(result['file_content'])
+            
             return result
             
         except (json.JSONDecodeError, ValueError) as e:
@@ -430,3 +443,4 @@ def call_claude_api(messages):
         print(f"❌ Unexpected Claude API error: {e}")
         logger.error(f"Unexpected error calling Claude API: {e}")
         raise
+
