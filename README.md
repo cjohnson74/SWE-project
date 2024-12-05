@@ -93,8 +93,7 @@ where pdftoppm
 ### .env
 ```markdown
 # Django
-SECRET_KEY=<django-secret-key>
-DEBUG=True
+SECRET_KEY='django-insecure-0peo@#x9jur3!h$ryje!$879xww8y1y66jx!%*#ymhg&jkozs2'
 
 # Canvas API
 CANVAS_ACCESS_TOKEN='<canvas-access-token>'
@@ -113,13 +112,19 @@ For testing your application before you've implemented OAuth, the simplest optio
 
 To manually generate a token for testing:
 
-Click the "profile" link in the top right menu bar, or navigate to /profile
-Under the "Approved Integrations" section, click the button to generate a new access token.
-Once the token is generated, you cannot view it again, and you'll have to generate a new token if you forget it. Remember that access tokens are password equivalent, so keep it secret.
+1. Click the "profile" link in the top right menu bar, or navigate to /profile
+2. Under the "Approved Integrations" section, click the button to generate a new access token.
+3. Once the token is generated, you cannot view it again, and you'll have to generate a new token if you forget it. Remember that access tokens are password equivalent, so keep it secret.
 
 Source: https://canvas.instructure.com/doc/api/file.oauth.html#manual-token-generation
 
-# These commands are not needed anymore as we are using MongoDB now, but we don't want to delete them
+### Claude API Key
+1. Go to https://console.anthropic.com/settings/keys
+2. Click on "+ Create Key"
+3. Copy the API key and paste it into the `.env` file
+4. Add money to your account
+
+### Migrate and Create Superuser
 ```markdown
 #(.venv) djangox $ python manage.py migrate
 #(.venv) djangox $ python manage.py createsuperuser
