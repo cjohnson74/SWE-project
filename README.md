@@ -3,6 +3,8 @@
 
 https://github.com/wsvincent/djangox/assets/766418/a73ea730-a7b4-4e53-bf51-aa68f6816d6a
 
+https://www.youtube.com/watch?v=r1J9ejN8tuk&ab_channel=VedantShringari
+
 
 ## 🚀 Features
 
