@@ -23,6 +23,7 @@
 * [Next Steps](#next-steps)
 * [Contributing](#contributing)
 * [Support](#support)
+* [Screenshots](#screenshots)
 * [License](#license)
 
 ----
@@ -172,6 +173,21 @@ $ docker compose exec web python manage.py migrate
 $ docker compose exec web python manage.py createsuperuser
 # Load the site at http://127.0.0.1:8000
 ```
+
+## Screenshots
+![Screenshot 2024-12-12 at 1 41 48 PM](https://github.com/user-attachments/assets/7f4204ca-5c35-411f-8ad8-bb935ff0d9c3)
+![Screenshot 2024-12-12 at 1 42 28 PM](https://github.com/user-attachments/assets/8b69cc58-7590-47aa-9417-aef7a573a027)
+![Screenshot 2024-12-12 at 1 43 10 PM](https://github.com/user-attachments/assets/0d3d8e46-1534-4461-b35d-a92e8f9287d8)
+![Screenshot 2024-12-12 at 1 43 22 PM](https://github.com/user-attachments/assets/07e22a5e-d989-4069-be2b-75a485c6721f)
+![Screenshot 2024-12-12 at 1 47 25 PM](https://github.com/user-attachments/assets/5aa3de84-0846-4d4c-a32a-66d45e88a644)
+![Screenshot 2024-12-12 at 1 47 42 PM](https://github.com/user-attachments/assets/db19506d-1ff0-423f-b7ca-1e62357fdd95)
+![Screenshot 2024-12-12 at 1 48 37 PM](https://github.com/user-attachments/assets/bd9663b4-d52b-40af-956c-557f23fb3944)
+![Screenshot 2024-12-12 at 2 27 33 PM](https://github.com/user-attachments/assets/7a1fadcf-99c2-4bb7-a56f-3dd052c0a2c9)
+![Screenshot 2024-12-12 at 2 27 40 PM](https://github.com/user-attachments/assets/21f791a7-59fd-4fbf-a4de-1d64ffd422cf)
+![Screenshot 2024-12-12 at 2 28 05 PM](https://github.com/user-attachments/assets/dfc59540-6764-4dcb-9bf9-d70985ceb178)
+![Screenshot 2024-12-12 at 2 28 15 PM](https://github.com/user-attachments/assets/05801077-fa66-44a3-a0ce-514849850ab0)
+![Screenshot 2024-12-12 at 2 28 23 PM](https://github.com/user-attachments/assets/7a8132af-a8ac-45ad-afd8-dd74d6e08dff)
+![Screenshot 2024-12-12 at 2 28 30 PM](https://github.com/user-attachments/assets/b438c6e6-ef0f-465c-8289-489b20802e4f)
 
 ## License
 
