@@ -1,11 +1,5 @@
 > A batteries-included Django starter project. To learn more visit [LearnDjango.com](https://learndjango.com).
 
-
-https://github.com/wsvincent/djangox/assets/766418/a73ea730-a7b4-4e53-bf51-aa68f6816d6a
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=r1J9ejN8tuk&ab" target="_blank"><img src="http://img.youtube.com/vi/r1J9ejN8tuk&ab/0.jpg" width="240" height="180" border="10" /></a>
-https://www.youtube.com/watch?v=r1J9ejN8tuk&ab_channel=VedantShringari
-
-
 ## 🚀 Features
 
 - Django 5.1 & Python 3.12
